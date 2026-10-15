@@ -87,10 +87,10 @@ python -m venv .venv
 2. **The trust boundary moved; it didn't vanish.** Phase 2 mandates close the "forged intent" gap, but now the principal's signing key and the `principal_keys` config are the boundary. Key management (where the user signs, rotation, revocation) isn't built. There's no revocation list yet: a leaked mandate is valid until it expires.
 3. **EVM only, and no EIP-55 checksum validation.** That needs keccak-256, which isn't in the Python stdlib.
 4. **Behavioral rules are fixed thresholds** (50% near-limit, 24h, 10/hour). They're placeholders, not calibrated on real payment data, and a patient attacker can stay under them (e.g. 3 payments a day). Semantic purpose mismatch (Scenario B) is Phase 3.
-8. **Ledger records approvals, not settlement.** An APPROVE is assumed to be paid. A signed-but-failed transaction still counts against the budget, which is the conservative direction. Reconciling the ledger with on-chain settlement is not built.
 5. **The injection regex is easy to bypass.** That's acceptable only because it never decides anything.
 6. **Payee matching is exact string matching** after case and whitespace normalisation.
 7. **The audit chain is tamper-evident, not tamper-proof.** Anyone with DB write access can rewrite the whole chain unless the head hash is anchored externally.
+8. **Ledger records approvals, not settlement.** An APPROVE is assumed to be paid. A signed-but-failed transaction still counts against the budget, which is the conservative direction. Reconciling the ledger with on-chain settlement is not built.
 
 ## Hypotheses still to test (not claims)
 
