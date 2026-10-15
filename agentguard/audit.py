@@ -80,7 +80,8 @@ class AuditLog:
             "ts_utc": datetime.now(timezone.utc).isoformat(),
             "request_id": req.request_id,
             "agent_id": req.action.agent_id,
-            "user_id": req.intent.user_id,
+            # Principal: from the signed mandate when there is one (the unsigned intent may be forged).
+            "user_id": req.mandate.body.principal if req.mandate else req.intent.user_id,
             "decision": res.decision.value,
             "risk_score": res.risk_score,
             "reason_codes": _canonical(res.reason_codes),

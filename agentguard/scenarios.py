@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 
-from .models import EvaluationRequest
+from .models import EvaluationRequest, EvaluationResult
 
 # --- fixture addresses (fictional) ------------------------------------------
 APPROVED = "0x7a3fc1e5d2b9846f0e1c2a3b4d5e6f708192a4b1"   # Acme's wallet, user-approved
@@ -89,6 +89,10 @@ class Case:
         for path, value in self.patch.items():
             _set(d, path, copy.deepcopy(value))
         return EvaluationRequest.model_validate(d)
+
+    def run(self) -> EvaluationResult:
+        from .engine import evaluate  # stateless: Phase 1 cases need no ledger
+        return evaluate(self.request())
 
 
 def _set(d: dict, path: str, value) -> None:

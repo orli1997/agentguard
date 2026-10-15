@@ -9,7 +9,9 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from .mandate import SignedMandate
 
 
 class SourceType(str, Enum):
@@ -68,6 +70,25 @@ class AuthorizationPolicy(BaseModel):
     vendor_registry: list[VendorRecord] = Field(default_factory=list)
     denylist: list[str] = Field(default_factory=list)
 
+    # --- Phase 2: mandates
+    # When true, authority comes ONLY from a valid signed mandate; request.intent is ignored.
+    require_signed_mandate: bool = False
+    principal_keys: list["PrincipalKey"] = Field(default_factory=list)
+
+    # --- Phase 2: behavioral thresholds
+    split_window_hours: float = 24
+    # A payment counts toward a split pattern only if it is at least this share of the per-tx limit.
+    # Keeps many tiny pay-per-use payments from looking like structuring.
+    split_near_limit_ratio: Decimal = Decimal("0.5")
+    velocity_window_minutes: float = 60
+    velocity_max_tx: int = 10
+
+
+class PrincipalKey(BaseModel):
+    key_id: str
+    principal: str
+    public_key_hex: str
+
 
 class ContextItem(BaseModel):
     """A piece of external information the agent read before acting."""
@@ -95,11 +116,18 @@ class TransactionRequest(BaseModel):
 
 class EvaluationRequest(BaseModel):
     request_id: str
-    intent: UserIntent
+    intent: Optional[UserIntent] = None
+    mandate: Optional[SignedMandate] = None
     policy: AuthorizationPolicy
     action: AgentAction
     transaction: TransactionRequest
     context: list[ContextItem] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _needs_authority(self):
+        if self.intent is None and self.mandate is None:
+            raise ValueError("request needs an intent or a signed mandate")
+        return self
 
 
 # ---------------------------------------------------------------- outputs

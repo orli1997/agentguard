@@ -1,18 +1,20 @@
 """Score the engine against the labeled cases."""
 from __future__ import annotations
 
-from .engine import evaluate
 from .scenarios import CASES
+from .scenarios_phase2 import CASES2
+
+ALL_CASES = [("1", c) for c in CASES] + [("2", c) for c in CASES2]
 
 
-def run(split: str | None = None) -> dict:
+def run(split: str | None = None, phase: str | None = None) -> dict:
     rows = []
-    for c in CASES:
-        if split and c.split != split:
+    for ph, c in ALL_CASES:
+        if (split and c.split != split) or (phase and ph != phase):
             continue
-        res = evaluate(c.request())
+        res = c.run()
         rows.append({
-            "id": c.id, "title": c.title, "category": c.category, "split": c.split,
+            "phase": ph, "id": c.id, "title": c.title, "category": c.category, "split": c.split,
             "expected": c.expected, "actual": res.decision.value,
             "correct": res.decision.value == c.expected,
             "missing_codes": [m for m in c.must_include if m not in res.reason_codes],

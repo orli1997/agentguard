@@ -17,7 +17,7 @@ for split in ("dev", "test", None):
     for r in m["rows"]:
         flag = "ok " if r["correct"] and not r["missing_codes"] else "XX "
         extra = f"  missing={r['missing_codes']}" if r["missing_codes"] else ""
-        print(f"  {flag}{r['id']} {r['expected']:>7} -> {r['actual']:<7} {r['title']}{extra}")
+        print(f"  {flag}P{r['phase']} {r['id']} {r['expected']:>7} -> {r['actual']:<7} {r['title']}{extra}")
 
 print("\nNOTE: synthetic cases written alongside the engine. This measures rule coverage,"
       "\nnot real-world detection. The test split is not an independent holdout.")
