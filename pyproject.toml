@@ -1,0 +1,13 @@
+[project]
+name = "agentguard"
+version = "0.1.0"
+description = "Pre-signing risk engine for AI-agent payments (research prototype)"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2", "fastapi", "uvicorn", "streamlit", "pandas"]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
