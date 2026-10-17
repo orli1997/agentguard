@@ -99,3 +99,11 @@ def test_clean_invoices_raise_no_injection_evidence():
     assert scan(CLEAN_INVOICE) == []
     assert scan(CLEAN_INVOICE.replace("50.00", "75.00")) == []
     assert {h["pattern"] for h in scan(INJECTED_INVOICE)} >= {"override_instructions", "redirect_payment", "secrecy"}
+
+
+def test_request_without_any_authority_is_blocked_not_rejected():
+    r = req()
+    r.intent = None
+    r.policy.require_signed_mandate = False
+    res = evaluate(r)
+    assert res.decision == Decision.BLOCK and res.reason_codes[0] == "NO_AUTHORITY"

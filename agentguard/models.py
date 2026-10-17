@@ -9,7 +9,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from .mandate import SignedMandate
 
@@ -121,13 +121,9 @@ class EvaluationRequest(BaseModel):
     policy: AuthorizationPolicy
     action: AgentAction
     transaction: TransactionRequest
+    # intent and mandate may both be missing: the engine BLOCKs that (and it gets audited),
+    # rather than the API rejecting it with a 422 that leaves no trace.
     context: list[ContextItem] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def _needs_authority(self):
-        if self.intent is None and self.mandate is None:
-            raise ValueError("request needs an intent or a signed mandate")
-        return self
 
 
 # ---------------------------------------------------------------- outputs

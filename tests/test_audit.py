@@ -27,3 +27,11 @@ def test_audit_stores_full_evidence(tmp_path):
     rec = log.record(r, evaluate(r))
     assert "DESTINATION_NOT_AUTHORIZED" in rec["reason_codes"]
     assert "ignore all previous instructions" in rec["request_json"]
+
+
+def test_audit_records_request_with_no_authority(tmp_path):
+    log = AuditLog(tmp_path / "n.db")
+    r = CASES[0].request()
+    r.intent = None
+    rec = log.record(r, evaluate(r))
+    assert rec["user_id"] == "(none)" and rec["decision"] == "BLOCK"

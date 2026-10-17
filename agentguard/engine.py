@@ -82,6 +82,9 @@ def resolve_authority(ctx: Ctx) -> list[Finding]:
             return [_f("MANDATE_REQUIRED", Severity.BLOCK,
                        "Policy requires a signed mandate; none was supplied.",
                        unsigned_intent_supplied=req.intent is not None)]
+        if req.intent is None:
+            return [_f("NO_AUTHORITY", Severity.BLOCK,
+                       "Request carries neither a signed mandate nor a user intent.", request_id=req.request_id)]
         it = req.intent
         ctx.auth = Authority(
             source="intent", payee_name=it.payee_name, token=it.token, chain=it.chain,

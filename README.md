@@ -75,6 +75,26 @@ python -m venv .venv
 | `HISTORY_UNAVAILABLE` | review / info | No ledger connected. REVIEW if the mandate has cumulative caps (fail closed) |
 | `SPLIT_PATTERN_WITHIN_MANDATE`, `BUDGET_OK`, `MANDATE_VERIFIED`, `REQUEST_INTENT_IGNORED` | info | Evidence |
 
+## Excel + SQL test pipeline
+
+Excel → SQLite → engine → SQL analysis → Excel report.
+
+```bash
+.venv/Scripts/python scripts/make_test_data.py   # (re)generate data/agentguard_test_data.xlsx
+.venv/Scripts/python scripts/load_excel.py       # Excel -> data/agentguard.db (with data-quality checks)
+.venv/Scripts/python scripts/run_batch.py        # replay every request through the Guard, in time order
+.venv/Scripts/python scripts/report.py           # sql/analysis.sql -> reports/agentguard_results.xlsx
+```
+
+- **Input workbook** (`data/agentguard_test_data.xlsx`) covers October 2026 with 258 payment requests, 3 agents, 9 signed mandates, a vendor registry, a denylist and the principal's public key. The **`ground_truth`** column holds the decision an analyst would want at signing time. You can edit rows or add new ones. Changing any signed field of a mandate invalidates its signature.
+- **Database** (`data/agentguard.db`) has the input tables (`sql/schema.sql`) plus outputs: `decisions`, `decision_findings` (one row per rule hit), `ledger` and `audit_log`. Open it with any SQLite tool, such as DB Browser for SQLite or the VS Code SQLite extension.
+- **Queries** (`sql/analysis.sql`): confusion matrix, KPIs, accuracy by scenario, disagreements, rule frequency, mandate budget usage, suspicious wallets, daily activity, review queue, blocked value.
+- **Report** (`reports/agentguard_results.xlsx`): the Summary sheet uses live Excel formulas (COUNTIFS/SUMPRODUCT) over `all_decisions`, plus one sheet per query.
+
+**Current result:** 252/258 match the labels, every BLOCK-labelled attack is blocked, and there are 0 false alarms. The 6 disagreements are known gaps, kept in the data on purpose:
+- **4 × `purpose_mismatch`.** Right vendor, wrong purpose ("gift cards" bought through DesignHub). The engine approves them because Scenario B (semantic intent) isn't built.
+- **2 × `vendor_rotated_wallet`.** A genuine vendor wallet change. The engine blocks it, where a human review would be more appropriate.
+
 ## Results on the labeled cases (44 cases: 24 Phase 1 + 20 Phase 2)
 
 `scripts/evaluate.py` reports 44/44 correct decisions, a 0% false-positive rate, and decisions in well under 1 ms. The suite has 70 tests, including the concurrency test.
@@ -111,6 +131,10 @@ agentguard/
   audit.py      hash-chained SQLite audit log
   scenarios.py  24 labeled Phase 1 cases
   scenarios_phase2.py  20 labeled Phase 2 cases (fixture keys, fixed clock)
+data/           agentguard_test_data.xlsx (input); agentguard.db is generated
+sql/            schema.sql, analysis.sql
+scripts/        make_test_data, load_excel, run_batch, report, evaluate
+reports/        agentguard_results.xlsx (generated)
   metrics.py    detection / FP / FN / latency
   api.py        FastAPI
 app.py          Streamlit demo

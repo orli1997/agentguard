@@ -81,7 +81,8 @@ class AuditLog:
             "request_id": req.request_id,
             "agent_id": req.action.agent_id,
             # Principal: from the signed mandate when there is one (the unsigned intent may be forged).
-            "user_id": req.mandate.body.principal if req.mandate else req.intent.user_id,
+            "user_id": (req.mandate.body.principal if req.mandate
+                        else req.intent.user_id if req.intent else "(none)"),
             "decision": res.decision.value,
             "risk_score": res.risk_score,
             "reason_codes": _canonical(res.reason_codes),
