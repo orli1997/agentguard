@@ -25,7 +25,8 @@ CREATE TABLE agents (
     velocity_window_minutes  NUMERIC NOT NULL,
     split_window_hours       NUMERIC NOT NULL,
     split_near_limit_ratio   NUMERIC NOT NULL,
-    require_signed_mandate   INTEGER NOT NULL -- 0/1
+    require_signed_mandate   INTEGER NOT NULL, -- 0/1
+    wallet_address           TEXT              -- the agent's own wallet (Phase 3 reconcile)
 );
 
 CREATE TABLE vendors (

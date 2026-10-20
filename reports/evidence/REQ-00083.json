@@ -1,0 +1,100 @@
+{
+  "request": {
+    "request_id": "REQ-00083",
+    "ts": "2026-10-13 18:00:00",
+    "agent_id": "agent-api-03",
+    "mandate_id": "MND-302",
+    "payee_name": "DataPipe API",
+    "to_address": "0x996feaee19347c2336b2ec1161a2e76fb7500f3d",
+    "amount": 3,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "api_response",
+    "context_text": "{\"service\":\"DataPipe API\",\"units\":92,\"price_usdc\":\"3.00\",\"pay_to\":\"0x996feaee19347c2336b2ec1161a2e76fb7500f3d\"}",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-302",
+    "principal": "org-finance",
+    "agent_id": "agent-api-03",
+    "payee_name": "DataPipe API",
+    "destinations": "0x996feaee19347c2336b2ec1161a2e76fb7500f3d",
+    "max_amount_per_tx": "5",
+    "max_total": "50",
+    "max_tx_count": null,
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "Data enrichment API credits",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-302 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-302\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-302).",
+      "evidence": "{\"to\": \"0x996feaee19347c2336b2ec1161a2e76fb7500f3d\", \"trust_source\": \"signed_mandate:MND-302\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 15.0 of 50, 4 payments).",
+      "evidence": "{\"spent\": \"15.0\", \"count\": 4}"
+    }
+  ],
+  "audit_record": {
+    "seq": 83,
+    "ts_utc": "2026-10-20T20:22:21.388242+00:00",
+    "decision": "APPROVE",
+    "record_hash": "71f8d652434b733c52cbfe3d3ab0f5efc26d9784c112011d77d7f96527e2876b",
+    "prev_hash": "52aac800c88dc13025f33bd14365fc9383aca2a19099a60191cddd0f365626df"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0x1388659646acdfce95bd25de106efa0db168f10867d2410f5cd6548de6f9abf0",
+      "submitted_at": "2026-10-13T18:00:06+00:00",
+      "attempt": 1
+    }
+  ],
+  "reconciliation": {
+    "status": "MISSING",
+    "severity": "high",
+    "match_method": "none",
+    "explanation": "Executor reported tx 0x1388659646\u2026 but nothing from 0x14ec...6488 with that hash is on base after 26280 min (dropped, replaced, or sent from another wallet).",
+    "action": "Check the executor's broadcast log and mempool. Do not re-send until the tx is known to be dead.",
+    "handling": "OPEN",
+    "tx_hashes": "0x1388659646acdfce95bd25de106efa0db168f10867d2410f5cd6548de6f9abf0",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00083",
+        "approved_at": "2026-10-13T18:00:00Z",
+        "agent_id": "agent-api-03",
+        "mandate_id": "MND-302",
+        "from_wallet": "0x14ec54a966fb83430b43ec844ace015863326488",
+        "to_address": "0x996feaee19347c2336b2ec1161a2e76fb7500f3d",
+        "amount": "3.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "71f8d652434b733c52cbfe3d3ab0f5efc26d9784c112011d77d7f96527e2876b"
+      },
+      "submitted_tx_hashes": [
+        "0x1388659646acdfce95bd25de106efa0db168f10867d2410f5cd6548de6f9abf0"
+      ],
+      "observed": []
+    }
+  }
+}

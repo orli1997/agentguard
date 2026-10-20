@@ -1,0 +1,120 @@
+{
+  "request": {
+    "request_id": "REQ-00026",
+    "ts": "2026-10-05 10:00:00",
+    "agent_id": "agent-procure-02",
+    "mandate_id": "MND-202",
+    "payee_name": "SecureMail",
+    "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+    "amount": 45,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-8825\nSecureMail\nAmount due: 45.00 USDC on Base\nPay to: 0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-202",
+    "principal": "org-finance",
+    "agent_id": "agent-procure-02",
+    "payee_name": "SecureMail",
+    "destinations": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+    "max_amount_per_tx": "50",
+    "max_total": "150",
+    "max_tx_count": null,
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "SecureMail email security licences",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-202 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-202\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-202).",
+      "evidence": "{\"to\": \"0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69\", \"trust_source\": \"signed_mandate:MND-202\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 0 of 150, 0 payments).",
+      "evidence": "{\"spent\": \"0\", \"count\": 0}"
+    }
+  ],
+  "audit_record": {
+    "seq": 26,
+    "ts_utc": "2026-10-20T20:22:20.108663+00:00",
+    "decision": "APPROVE",
+    "record_hash": "bed0daf5652e1d15ff871fc7871196c582a29d64c029bb0e132b46d72af9139c",
+    "prev_hash": "11fd164f2bdab38b4ce1444ee916ca1b6c0e98d24f8610a1d05fd3b91f181054"
+  },
+  "audit_chain_intact": true,
+  "submitted": [],
+  "reconciliation": {
+    "status": "DUPLICATE",
+    "severity": "high",
+    "match_method": "heuristic",
+    "explanation": "Paid 2 times for one approval (an identical transfer minutes later that no other approval explains): 0xf0e02c4c3d\u2026, 0xd040e9afad\u2026. Approved 45 USDC, sent 90 in total.",
+    "action": "Ask 0x8eeb...af69 to refund 45 USDC. Make the executor idempotent: a retry must check whether the first tx already settled.",
+    "handling": "OPEN",
+    "tx_hashes": "0xf0e02c4c3d93c728f1d9c91179afe7bad98a7bc6c2bba4a2c1d8b28d92c3c012;0xd040e9afada5a81d899df80eda4911e87004fcbef43b10f335a29dfa03ed2edb",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00026",
+        "approved_at": "2026-10-05T10:00:00Z",
+        "agent_id": "agent-procure-02",
+        "mandate_id": "MND-202",
+        "from_wallet": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+        "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+        "amount": "45.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "bed0daf5652e1d15ff871fc7871196c582a29d64c029bb0e132b46d72af9139c"
+      },
+      "submitted_tx_hashes": [],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0xf0e02c4c3d93c728f1d9c91179afe7bad98a7bc6c2bba4a2c1d8b28d92c3c012",
+          "log_index": 0,
+          "block_number": 50190814,
+          "block_time": "2026-10-05T10:00:28Z",
+          "token": "USDC",
+          "from_address": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+          "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+          "amount": "45.00",
+          "status": "success"
+        }
+      ],
+      "block_time": "2026-10-05T10:00:28+00:00",
+      "duplicates": [
+        {
+          "chain": "base",
+          "tx_hash": "0xd040e9afada5a81d899df80eda4911e87004fcbef43b10f335a29dfa03ed2edb",
+          "log_index": 0,
+          "block_number": 50190904,
+          "block_time": "2026-10-05T10:03:28Z",
+          "token": "USDC",
+          "from_address": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+          "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+          "amount": "45.00",
+          "status": "success"
+        }
+      ]
+    }
+  }
+}

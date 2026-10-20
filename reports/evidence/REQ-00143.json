@@ -1,0 +1,108 @@
+{
+  "request": {
+    "request_id": "REQ-00143",
+    "ts": "2026-10-20 10:00:00",
+    "agent_id": "agent-procure-02",
+    "mandate_id": "MND-201",
+    "payee_name": "DesignHub",
+    "to_address": "0x6bc517e257d6ddcf1571c972ecb87bc691c22dbb",
+    "amount": 80,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-2716\nDesignHub\nAmount due: 80.00 USDC on Base\nPay to: 0x6bc517e257d6ddcf1571c972ecb87bc691c22dbb",
+    "scenario_type": "split_payment",
+    "ground_truth": "APPROVE",
+    "notes": "first payment alone is normal; the pattern appears from #2"
+  },
+  "mandate": {
+    "mandate_id": "MND-201",
+    "principal": "org-finance",
+    "agent_id": "agent-procure-02",
+    "payee_name": "DesignHub",
+    "destinations": "0x6bc517e257d6ddcf1571c972ecb87bc691c22dbb",
+    "max_amount_per_tx": "100",
+    "max_total": null,
+    "max_tx_count": null,
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "DesignHub design-tool seats",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-201 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-201\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-201).",
+      "evidence": "{\"to\": \"0x6bc517e257d6ddcf1571c972ecb87bc691c22dbb\", \"trust_source\": \"signed_mandate:MND-201\"}"
+    }
+  ],
+  "audit_record": {
+    "seq": 143,
+    "ts_utc": "2026-10-20T20:22:22.746023+00:00",
+    "decision": "APPROVE",
+    "record_hash": "c9c709b62ca1791b02fa7c11fb66b29bd75376e402e1f0c88df23caf1808c40e",
+    "prev_hash": "dc62fd14269affc81f0f428acbbfdfec297e70ea81133289835c19ac342525f4"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0x7ef643f2f7970f12e9c02917feb0b138a068643507758d4bb65146822fa0ec42",
+      "submitted_at": "2026-10-20T10:00:34+00:00",
+      "attempt": 1
+    }
+  ],
+  "reconciliation": {
+    "status": "AMOUNT_MISMATCH",
+    "severity": "high",
+    "match_method": "tx_hash",
+    "explanation": "Approved 80 USDC; tx 0x7ef643f2f7\u2026 sent 79.7 (-0.3).",
+    "action": "Pay the shortfall under a new approval. Fix the executor before further payments.",
+    "handling": "OPEN",
+    "tx_hashes": "0x7ef643f2f7970f12e9c02917feb0b138a068643507758d4bb65146822fa0ec42",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00143",
+        "approved_at": "2026-10-20T10:00:00Z",
+        "agent_id": "agent-procure-02",
+        "mandate_id": "MND-201",
+        "from_wallet": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+        "to_address": "0x6bc517e257d6ddcf1571c972ecb87bc691c22dbb",
+        "amount": "80.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "c9c709b62ca1791b02fa7c11fb66b29bd75376e402e1f0c88df23caf1808c40e"
+      },
+      "submitted_tx_hashes": [
+        "0x7ef643f2f7970f12e9c02917feb0b138a068643507758d4bb65146822fa0ec42"
+      ],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0x7ef643f2f7970f12e9c02917feb0b138a068643507758d4bb65146822fa0ec42",
+          "log_index": 0,
+          "block_number": 50838818,
+          "block_time": "2026-10-20T10:00:37Z",
+          "token": "USDC",
+          "from_address": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+          "to_address": "0x6bc517e257d6ddcf1571c972ecb87bc691c22dbb",
+          "amount": "79.70",
+          "status": "success"
+        }
+      ],
+      "block_time": "2026-10-20T10:00:37+00:00"
+    }
+  }
+}

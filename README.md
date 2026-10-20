@@ -95,6 +95,40 @@ Excel → SQLite → engine → SQL analysis → Excel report.
 - **4 × `purpose_mismatch`.** Right vendor, wrong purpose ("gift cards" bought through DesignHub). The engine approves them because Scenario B (semantic intent) isn't built.
 - **2 × `vendor_rotated_wallet`.** A genuine vendor wallet change. The engine blocks it, where a human review would be more appropriate.
 
+## Phase 3: Reconcile (approved vs. executed)
+
+AgentGuard decides *before* signing. Reconcile checks *after* execution: did what happened on-chain match what was approved? The chain alone doesn't know what was approved, so the data contract has three events:
+
+| Event | Source | Fields |
+|---|---|---|
+| `PaymentApproved` | AgentGuard's APPROVE decisions + audit hash | request_id, approved_at, agent wallet, destination, amount, token, chain |
+| `PaymentSubmitted` (optional) | the executor's log | request_id → tx_hash, attempt |
+| `PaymentObserved` | chain: ERC-20 Transfer logs + receipts (`observe_rpc.py`, read-only JSON-RPC) | tx_hash, block, time, from, to, amount, status |
+
+Each approval ends in exactly one status, and every outflow from an agent wallet is either claimed by an approval or reported:
+
+| Status | Severity | Meaning |
+|---|---|---|
+| `CONFIRMED` | none | Paid once, right amount and destination, enough confirmations |
+| `PENDING` | low | Within the grace period, or seen with fewer than 12 confirmations |
+| `FAILED` | medium | Mined but reverted; safe to retry with the same request_id |
+| `MISSING` | high | Approved but never seen after the grace period, with or without a reported hash |
+| `DUPLICATE` | high | One approval paid more than once (e.g. a retry after the first tx had settled; see x402 issue #452) |
+| `AMOUNT_MISMATCH` | high | Amount differs; an exact power-of-10 ratio is flagged as a likely decimals bug |
+| `DESTINATION_MISMATCH` | critical | The executed transaction paid someone else: it changed after approval |
+| `UNAPPROVED_OUTFLOW` | critical | Money left an agent wallet with no approval: the guard was bypassed |
+
+Matching uses the reported tx hash when there is one. Otherwise it falls back to wallet + destination + exact amount + time window, and the explanation says so. **Known limit:** with no reported hash, a wrong-amount payment cannot be tied to its approval. It shows up as `MISSING` + `UNAPPROVED_OUTFLOW` (both flagged), not as `AMOUNT_MISMATCH`. There's a test documenting this.
+
+```bash
+.venv/Scripts/python scripts/simulate_chain.py     # approved payments -> data/onchain_activity.xlsx, with labelled faults
+.venv/Scripts/python scripts/reconcile_batch.py    # -> payment_approved / _submitted / _observed, recon_items
+.venv/Scripts/python scripts/explain.py --exceptions   # story + JSON evidence bundle per open exception
+.venv/Scripts/python scripts/report.py             # report now includes recon_summary, recon_exceptions, wallet_reconciliation
+```
+
+**Current result (synthetic):** 218 approvals and 224 transfers. All 221 labelled outcomes match (204 confirmed, of which 32 were matched without a tx hash, plus 17 exceptions). The simulator and reconciler were written together, so this shows rule coverage, not field performance. The RPC observer was checked once against live Base mainnet and parsed 83 real USDC transfers from one block. Free public nodes rate-limit `eth_getLogs` (429) and some refuse receipts (403), so real use needs a keyed RPC provider.
+
 ## Results on the labeled cases (44 cases: 24 Phase 1 + 20 Phase 2)
 
 `scripts/evaluate.py` reports 44/44 correct decisions, a 0% false-positive rate, and decisions in well under 1 ms. The suite has 70 tests, including the concurrency test.
@@ -126,6 +160,8 @@ agentguard/
   mandate.py    Ed25519 signed mandates
   ledger.py     engine-owned payment history, atomic check-and-reserve
   guard.py      engine + ledger + audit as one pre-signing call
+  reconcile.py  Phase 3: approved vs. executed, statuses + explanations
+  observe_rpc.py  read-only ERC-20 transfer reader for EVM JSON-RPC
   address.py    EVM format, normalisation, lookalike detection
   injection.py  instruction-in-content heuristics (evidence only)
   audit.py      hash-chained SQLite audit log
@@ -133,7 +169,8 @@ agentguard/
   scenarios_phase2.py  20 labeled Phase 2 cases (fixture keys, fixed clock)
 data/           agentguard_test_data.xlsx (input); agentguard.db is generated
 sql/            schema.sql, analysis.sql
-scripts/        make_test_data, load_excel, run_batch, report, evaluate
+scripts/        make_test_data, load_excel, run_batch, report, evaluate,
+                simulate_chain, reconcile_batch, explain
 reports/        agentguard_results.xlsx (generated)
   metrics.py    detection / FP / FN / latency
   api.py        FastAPI

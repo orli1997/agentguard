@@ -41,6 +41,12 @@ def address(name: str) -> str:
 VENDORS = {n: address(n) for n in
            ["Acme Cloud Ltd", "Nimbus Storage", "DesignHub", "SecureMail", "InferAPI", "DataPipe API", "OldHost Inc"]}
 ACME = VENDORS["Acme Cloud Ltd"]
+
+
+def agent_wallet(agent_id: str) -> str:
+    return address(f"wallet:{agent_id}")
+
+
 ATTACKER_A = address("attacker-a")   # known bad: on the denylist
 ATTACKER_B = address("attacker-b")
 ATTACKER_C = address("attacker-c")
@@ -315,12 +321,12 @@ def main() -> None:
                 notes={"signature": "Ed25519 over the other fields. Change any field -> signature invalid.",
                        "max_total": "Blank = no cumulative cap.", "max_tx_count": "Blank = unlimited.",
                        "destinations": "Semicolon-separated. The only addresses this mandate allows."})
-    write_sheet(wb, "agents", ["agent_id", "max_amount_per_tx", "allowed_tokens", "allowed_chains", "velocity_max_tx",
-                               "velocity_window_minutes", "split_window_hours", "split_near_limit_ratio",
-                               "require_signed_mandate"],
-                [dict(zip(["agent_id", "max_amount_per_tx", "allowed_tokens", "allowed_chains", "velocity_max_tx",
-                           "velocity_window_minutes", "split_window_hours", "split_near_limit_ratio",
-                           "require_signed_mandate"], a)) for a in AGENTS])
+    agent_cols = ["agent_id", "max_amount_per_tx", "allowed_tokens", "allowed_chains", "velocity_max_tx",
+                  "velocity_window_minutes", "split_window_hours", "split_near_limit_ratio", "require_signed_mandate"]
+    write_sheet(wb, "agents", agent_cols + ["wallet_address"],
+                [{**dict(zip(agent_cols, a)), "wallet_address": agent_wallet(a[0])} for a in AGENTS],
+                widths={"wallet_address": 44},
+                notes={"wallet_address": "The agent's own wallet. Reconcile explains every transfer that leaves it."})
     write_sheet(wb, "vendors", ["vendor_name", "chain", "address"],
                 [dict(vendor_name=n, chain="base", address=a) for n, a in VENDORS.items()],
                 widths={"vendor_name": 18, "address": 44})

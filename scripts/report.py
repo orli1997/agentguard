@@ -145,8 +145,13 @@ def main() -> None:
     summary[f"A{hdr + 5}"].font = Font(name=FONT, italic=True, size=9, color="595959")
 
     # ------------------------------------------------ one sheet per SQL query
+    skipped = []
     for name, sql in queries():
-        cur = con.execute(sql)
+        try:
+            cur = con.execute(sql)
+        except sqlite3.OperationalError as e:   # e.g. reconcile tables not built yet
+            skipped.append(f"{name} ({e})")
+            continue
         qcols = [d[0] for d in cur.description]
         sheet = wb.create_sheet(name)
         sheet.append(qcols)
@@ -162,6 +167,8 @@ def main() -> None:
     wb.save(OUT)
     print(f"wrote {OUT}")
     print(f"  sheets: {', '.join(wb.sheetnames)}")
+    for sk in skipped:
+        print(f"  skipped {sk}: run scripts/simulate_chain.py and scripts/reconcile_batch.py first")
     con.close()
 
 

@@ -142,3 +142,81 @@ JOIN decisions d USING (request_id)
 WHERE d.decision = 'BLOCK'
 GROUP BY p.scenario_type
 ORDER BY blocked_usdc DESC;
+
+
+-- ======================================================================
+-- Phase 3: reconciliation (run scripts/simulate_chain.py + scripts/reconcile_batch.py first)
+-- ======================================================================
+
+
+-- name: recon_summary
+-- Every approval and every unexplained transfer, by outcome. observed_usdc counts successful transfers only.
+WITH item_money AS (
+    SELECT r.item_id, r.status, r.severity,
+           COALESCE(CAST(a.amount AS REAL), 0)                                   AS approved,
+           COALESCE((SELECT SUM(CAST(o.amount AS REAL)) FROM payment_observed o
+                     WHERE o.status = 'success' AND instr(r.tx_hashes, o.tx_hash) > 0), 0) AS observed
+    FROM recon_items r LEFT JOIN payment_approved a USING (request_id)
+)
+SELECT status, severity,
+       COUNT(*)                         AS items,
+       ROUND(SUM(approved), 2)          AS approved_usdc,
+       ROUND(SUM(observed), 2)          AS observed_usdc,
+       ROUND(SUM(observed - approved), 2) AS difference_usdc
+FROM item_money
+GROUP BY status, severity
+ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END,
+         items DESC;
+
+
+-- name: recon_exceptions
+-- The operations queue: everything that is not cleanly confirmed, worst first.
+SELECT r.severity, r.status, r.request_id, p.agent_id, p.payee_name, p.amount AS approved_amount,
+       r.match_method, r.explanation, r.action, r.handling
+FROM recon_items r
+LEFT JOIN payment_requests p USING (request_id)
+WHERE r.status <> 'CONFIRMED'
+ORDER BY CASE r.severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 ELSE 4 END,
+         r.request_id;
+
+
+-- name: wallet_reconciliation
+-- Per agent wallet: what AgentGuard approved vs. what actually left the wallet. Should net to zero.
+WITH appr AS (
+    SELECT from_wallet AS wallet, COUNT(*) AS approvals, SUM(CAST(amount AS REAL)) AS approved
+    FROM payment_approved GROUP BY from_wallet
+), outflow AS (
+    SELECT from_address AS wallet, COUNT(*) AS transfers, SUM(CAST(amount AS REAL)) AS sent
+    FROM payment_observed WHERE status = 'success' GROUP BY from_address
+)
+SELECT ag.agent_id, ag.wallet_address,
+       COALESCE(appr.approvals, 0)                                  AS approvals,
+       COALESCE(outflow.transfers, 0)                               AS transfers_out,
+       ROUND(COALESCE(appr.approved, 0), 2)                         AS approved_usdc,
+       ROUND(COALESCE(outflow.sent, 0), 2)                          AS sent_usdc,
+       ROUND(COALESCE(outflow.sent, 0) - COALESCE(appr.approved, 0), 2) AS unexplained_usdc
+FROM agents ag
+LEFT JOIN appr ON appr.wallet = ag.wallet_address
+LEFT JOIN outflow ON outflow.wallet = ag.wallet_address
+ORDER BY ABS(unexplained_usdc) DESC;
+
+
+-- name: recon_vs_labels
+-- Reconciler output vs. the injected faults (synthetic data: shows rule coverage only).
+SELECT l.expected_status,
+       COALESCE(r.status, '(no item)')  AS reconciler_status,
+       COUNT(*)                         AS items
+FROM recon_labels l
+LEFT JOIN recon_items r
+       ON (l.subject = 'approval' AND r.request_id = l.ref)
+       OR (l.subject = 'transfer' AND r.subject = 'transfer' AND r.tx_hashes = l.ref)
+GROUP BY l.expected_status, reconciler_status
+ORDER BY l.expected_status;
+
+
+-- name: match_methods
+-- How approvals were tied to on-chain transfers. Heuristic matches are weaker evidence.
+SELECT match_method, status, COUNT(*) AS items
+FROM recon_items WHERE subject = 'approval'
+GROUP BY match_method, status
+ORDER BY match_method, items DESC;

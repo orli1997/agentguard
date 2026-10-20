@@ -1,0 +1,100 @@
+{
+  "request": {
+    "request_id": "REQ-00187",
+    "ts": "2026-10-24 09:30:00",
+    "agent_id": "agent-billing-01",
+    "mandate_id": "MND-102",
+    "payee_name": "Nimbus Storage",
+    "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+    "amount": 50,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-9545\nNimbus Storage\nAmount due: 50.00 USDC on Base\nPay to: 0x118edfed6d6ec941990021a591e0670a1f24a74f",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-102",
+    "principal": "org-finance",
+    "agent_id": "agent-billing-01",
+    "payee_name": "Nimbus Storage",
+    "destinations": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+    "max_amount_per_tx": "60",
+    "max_total": "200",
+    "max_tx_count": "4",
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "Nimbus backup storage, monthly",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-102 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-102\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-102).",
+      "evidence": "{\"to\": \"0x118edfed6d6ec941990021a591e0670a1f24a74f\", \"trust_source\": \"signed_mandate:MND-102\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 150 of 200, 3 payments).",
+      "evidence": "{\"spent\": \"150\", \"count\": 3}"
+    }
+  ],
+  "audit_record": {
+    "seq": 187,
+    "ts_utc": "2026-10-20T20:22:23.668399+00:00",
+    "decision": "APPROVE",
+    "record_hash": "d32b56103691c77c2c0357418b848fffec689f13f506a9842a9f4ff6d6419d6b",
+    "prev_hash": "ba767b11b67f6c511e08b7041c0b668d676cd0439dc215fbf86e83584b4854c4"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0x8f9d74b2d0f0f4bd6ca8170d6b0b439c438e4062aac13e20e2e25f821b9eec4d",
+      "submitted_at": "2026-10-24T09:30:38+00:00",
+      "attempt": 1
+    }
+  ],
+  "reconciliation": {
+    "status": "MISSING",
+    "severity": "high",
+    "match_method": "none",
+    "explanation": "Executor reported tx 0x8f9d74b2d0\u2026 but nothing from 0xdf71...11fe with that hash is on base after 10950 min (dropped, replaced, or sent from another wallet).",
+    "action": "Check the executor's broadcast log and mempool. Do not re-send until the tx is known to be dead.",
+    "handling": "OPEN",
+    "tx_hashes": "0x8f9d74b2d0f0f4bd6ca8170d6b0b439c438e4062aac13e20e2e25f821b9eec4d",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00187",
+        "approved_at": "2026-10-24T09:30:00Z",
+        "agent_id": "agent-billing-01",
+        "mandate_id": "MND-102",
+        "from_wallet": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+        "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+        "amount": "50.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "d32b56103691c77c2c0357418b848fffec689f13f506a9842a9f4ff6d6419d6b"
+      },
+      "submitted_tx_hashes": [
+        "0x8f9d74b2d0f0f4bd6ca8170d6b0b439c438e4062aac13e20e2e25f821b9eec4d"
+      ],
+      "observed": []
+    }
+  }
+}

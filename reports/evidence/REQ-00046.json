@@ -1,0 +1,146 @@
+{
+  "request": {
+    "request_id": "REQ-00046",
+    "ts": "2026-10-10 09:30:00",
+    "agent_id": "agent-billing-01",
+    "mandate_id": "MND-102",
+    "payee_name": "Nimbus Storage",
+    "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+    "amount": 50,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-9577\nNimbus Storage\nAmount due: 50.00 USDC on Base\nPay to: 0x118edfed6d6ec941990021a591e0670a1f24a74f",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-102",
+    "principal": "org-finance",
+    "agent_id": "agent-billing-01",
+    "payee_name": "Nimbus Storage",
+    "destinations": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+    "max_amount_per_tx": "60",
+    "max_total": "200",
+    "max_tx_count": "4",
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "Nimbus backup storage, monthly",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-102 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-102\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-102).",
+      "evidence": "{\"to\": \"0x118edfed6d6ec941990021a591e0670a1f24a74f\", \"trust_source\": \"signed_mandate:MND-102\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 50 of 200, 1 payments).",
+      "evidence": "{\"spent\": \"50\", \"count\": 1}"
+    }
+  ],
+  "audit_record": {
+    "seq": 46,
+    "ts_utc": "2026-10-20T20:22:20.567462+00:00",
+    "decision": "APPROVE",
+    "record_hash": "63f8f7ac1de892f38e69d3d097e7e0ececd8fbd13ca3d5ecda392dfcc2f7da44",
+    "prev_hash": "02f6a8e794977ac67c9db887179ba4e836be3b671175e2fc718974ad3978e3dd"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0x4d3e541288787cf124149f754ae8dbb04293539c37af352505b9c00af1008e53",
+      "submitted_at": "2026-10-10T09:30:11+00:00",
+      "attempt": 1
+    },
+    {
+      "tx_hash": "0xd97dcb30948aa68d0f3386926658d6aa2cbf138f7598e785e833cb664a6d01b0",
+      "submitted_at": "2026-10-10T09:32:55+00:00",
+      "attempt": 2
+    }
+  ],
+  "reconciliation": {
+    "status": "DUPLICATE",
+    "severity": "high",
+    "match_method": "tx_hash",
+    "explanation": "Paid 2 times for one approval (more than one reported tx settled): 0x4d3e541288\u2026, 0xd97dcb3094\u2026. Approved 50 USDC, sent 100 in total.",
+    "action": "Ask 0x118e...a74f to refund 50 USDC. Make the executor idempotent: a retry must check whether the first tx already settled.",
+    "handling": "OPEN",
+    "tx_hashes": "0x4d3e541288787cf124149f754ae8dbb04293539c37af352505b9c00af1008e53;0xd97dcb30948aa68d0f3386926658d6aa2cbf138f7598e785e833cb664a6d01b0",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00046",
+        "approved_at": "2026-10-10T09:30:00Z",
+        "agent_id": "agent-billing-01",
+        "mandate_id": "MND-102",
+        "from_wallet": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+        "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+        "amount": "50.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "63f8f7ac1de892f38e69d3d097e7e0ececd8fbd13ca3d5ecda392dfcc2f7da44"
+      },
+      "submitted_tx_hashes": [
+        "0x4d3e541288787cf124149f754ae8dbb04293539c37af352505b9c00af1008e53",
+        "0xd97dcb30948aa68d0f3386926658d6aa2cbf138f7598e785e833cb664a6d01b0"
+      ],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0x4d3e541288787cf124149f754ae8dbb04293539c37af352505b9c00af1008e53",
+          "log_index": 0,
+          "block_number": 50405907,
+          "block_time": "2026-10-10T09:30:14Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+          "amount": "50.00",
+          "status": "success"
+        },
+        {
+          "chain": "base",
+          "tx_hash": "0xd97dcb30948aa68d0f3386926658d6aa2cbf138f7598e785e833cb664a6d01b0",
+          "log_index": 0,
+          "block_number": 50405989,
+          "block_time": "2026-10-10T09:32:58Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+          "amount": "50.00",
+          "status": "success"
+        }
+      ],
+      "block_time": "2026-10-10T09:30:14+00:00",
+      "duplicates": [
+        {
+          "chain": "base",
+          "tx_hash": "0xd97dcb30948aa68d0f3386926658d6aa2cbf138f7598e785e833cb664a6d01b0",
+          "log_index": 0,
+          "block_number": 50405989,
+          "block_time": "2026-10-10T09:32:58Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0x118edfed6d6ec941990021a591e0670a1f24a74f",
+          "amount": "50.00",
+          "status": "success"
+        }
+      ]
+    }
+  }
+}

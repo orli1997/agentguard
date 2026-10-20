@@ -1,0 +1,114 @@
+{
+  "request": {
+    "request_id": "REQ-00001",
+    "ts": "2026-10-01 09:00:00",
+    "agent_id": "agent-billing-01",
+    "mandate_id": "MND-101",
+    "payee_name": "Acme Cloud Ltd",
+    "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+    "amount": 75,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-5595\nAcme Cloud Ltd\nAmount due: 75.00 USDC on Base\nPay to: 0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-101",
+    "principal": "org-finance",
+    "agent_id": "agent-billing-01",
+    "payee_name": "Acme Cloud Ltd",
+    "destinations": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+    "max_amount_per_tx": "100",
+    "max_total": "400",
+    "max_tx_count": "6",
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "Acme Cloud hosting invoices, Q4 2026",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-101 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-101\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-101).",
+      "evidence": "{\"to\": \"0x49860bea2c20f106d01099d1df8d3ba53fca1d79\", \"trust_source\": \"signed_mandate:MND-101\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 0 of 400, 0 payments).",
+      "evidence": "{\"spent\": \"0\", \"count\": 0}"
+    }
+  ],
+  "audit_record": {
+    "seq": 1,
+    "ts_utc": "2026-10-20T20:22:19.517790+00:00",
+    "decision": "APPROVE",
+    "record_hash": "927d120f585dfaa57c1dfd7d253c2ac56d38e5610044e9d5dabaad274a9e1026",
+    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0xba36da59594263e87aae404f454c78590a33e9948885492ff75d4a00558270d3",
+      "submitted_at": "2026-10-01T09:00:13+00:00",
+      "attempt": 1
+    }
+  ],
+  "reconciliation": {
+    "status": "DESTINATION_MISMATCH",
+    "severity": "critical",
+    "match_method": "tx_hash",
+    "explanation": "Approved destination 0x4986...1d79, but tx 0xba36da5959\u2026 paid 75 USDC to 0xa742...1763. The transaction changed after approval.",
+    "action": "Critical: pause the agent and executor keys, report the destination, and investigate how the signed transaction differed from the approved one.",
+    "handling": "OPEN",
+    "tx_hashes": "0xba36da59594263e87aae404f454c78590a33e9948885492ff75d4a00558270d3",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00001",
+        "approved_at": "2026-10-01T09:00:00Z",
+        "agent_id": "agent-billing-01",
+        "mandate_id": "MND-101",
+        "from_wallet": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+        "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+        "amount": "75.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "927d120f585dfaa57c1dfd7d253c2ac56d38e5610044e9d5dabaad274a9e1026"
+      },
+      "submitted_tx_hashes": [
+        "0xba36da59594263e87aae404f454c78590a33e9948885492ff75d4a00558270d3"
+      ],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0xba36da59594263e87aae404f454c78590a33e9948885492ff75d4a00558270d3",
+          "log_index": 0,
+          "block_number": 50016208,
+          "block_time": "2026-10-01T09:00:16Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0xa7428089a0a1ef9162121f49ccf4cc82e73b1763",
+          "amount": "75.00",
+          "status": "success"
+        }
+      ],
+      "block_time": "2026-10-01T09:00:16+00:00"
+    }
+  }
+}

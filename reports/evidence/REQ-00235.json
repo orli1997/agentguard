@@ -1,0 +1,146 @@
+{
+  "request": {
+    "request_id": "REQ-00235",
+    "ts": "2026-10-29 09:00:00",
+    "agent_id": "agent-billing-01",
+    "mandate_id": "MND-101",
+    "payee_name": "Acme Cloud Ltd",
+    "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+    "amount": 75,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-2991\nAcme Cloud Ltd\nAmount due: 75.00 USDC on Base\nPay to: 0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-101",
+    "principal": "org-finance",
+    "agent_id": "agent-billing-01",
+    "payee_name": "Acme Cloud Ltd",
+    "destinations": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+    "max_amount_per_tx": "100",
+    "max_total": "400",
+    "max_tx_count": "6",
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "Acme Cloud hosting invoices, Q4 2026",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-101 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-101\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-101).",
+      "evidence": "{\"to\": \"0x49860bea2c20f106d01099d1df8d3ba53fca1d79\", \"trust_source\": \"signed_mandate:MND-101\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 300 of 400, 4 payments).",
+      "evidence": "{\"spent\": \"300\", \"count\": 4}"
+    }
+  ],
+  "audit_record": {
+    "seq": 235,
+    "ts_utc": "2026-10-20T20:22:24.708576+00:00",
+    "decision": "APPROVE",
+    "record_hash": "f1ba041738f5baf22075c28d6311d1d5fac1c28d159316f2a8a5e1e58c8d7541",
+    "prev_hash": "7e15cb5158e0d071a987f4b47db1e779fad1f6f5ce9d9d2ee841ee0a993c1601"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0x6cf64b93410bafb92482b31d6155d1d3895c85a4fa2bf0b416322582b29f407a",
+      "submitted_at": "2026-10-29T09:00:29+00:00",
+      "attempt": 1
+    },
+    {
+      "tx_hash": "0xee3c27f9a00dbed841df14f9fe0ee5eb8e6410c7bcb93b0025cb5184cb9f053e",
+      "submitted_at": "2026-10-29T09:02:59+00:00",
+      "attempt": 2
+    }
+  ],
+  "reconciliation": {
+    "status": "DUPLICATE",
+    "severity": "high",
+    "match_method": "tx_hash",
+    "explanation": "Paid 2 times for one approval (more than one reported tx settled): 0x6cf64b9341\u2026, 0xee3c27f9a0\u2026. Approved 75 USDC, sent 150 in total.",
+    "action": "Ask 0x4986...1d79 to refund 75 USDC. Make the executor idempotent: a retry must check whether the first tx already settled.",
+    "handling": "OPEN",
+    "tx_hashes": "0x6cf64b93410bafb92482b31d6155d1d3895c85a4fa2bf0b416322582b29f407a;0xee3c27f9a00dbed841df14f9fe0ee5eb8e6410c7bcb93b0025cb5184cb9f053e",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00235",
+        "approved_at": "2026-10-29T09:00:00Z",
+        "agent_id": "agent-billing-01",
+        "mandate_id": "MND-101",
+        "from_wallet": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+        "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+        "amount": "75.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "f1ba041738f5baf22075c28d6311d1d5fac1c28d159316f2a8a5e1e58c8d7541"
+      },
+      "submitted_tx_hashes": [
+        "0x6cf64b93410bafb92482b31d6155d1d3895c85a4fa2bf0b416322582b29f407a",
+        "0xee3c27f9a00dbed841df14f9fe0ee5eb8e6410c7bcb93b0025cb5184cb9f053e"
+      ],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0x6cf64b93410bafb92482b31d6155d1d3895c85a4fa2bf0b416322582b29f407a",
+          "log_index": 0,
+          "block_number": 51225816,
+          "block_time": "2026-10-29T09:00:32Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+          "amount": "75.00",
+          "status": "success"
+        },
+        {
+          "chain": "base",
+          "tx_hash": "0xee3c27f9a00dbed841df14f9fe0ee5eb8e6410c7bcb93b0025cb5184cb9f053e",
+          "log_index": 0,
+          "block_number": 51225891,
+          "block_time": "2026-10-29T09:03:02Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+          "amount": "75.00",
+          "status": "success"
+        }
+      ],
+      "block_time": "2026-10-29T09:00:32+00:00",
+      "duplicates": [
+        {
+          "chain": "base",
+          "tx_hash": "0xee3c27f9a00dbed841df14f9fe0ee5eb8e6410c7bcb93b0025cb5184cb9f053e",
+          "log_index": 0,
+          "block_number": 51225891,
+          "block_time": "2026-10-29T09:03:02Z",
+          "token": "USDC",
+          "from_address": "0xdf71e5cba6ab0fbe7d7504b76be05753f45211fe",
+          "to_address": "0x49860bea2c20f106d01099d1df8d3ba53fca1d79",
+          "amount": "75.00",
+          "status": "success"
+        }
+      ]
+    }
+  }
+}

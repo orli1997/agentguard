@@ -1,0 +1,114 @@
+{
+  "request": {
+    "request_id": "REQ-00258",
+    "ts": "2026-10-31 16:14:00",
+    "agent_id": "agent-api-03",
+    "mandate_id": "MND-301",
+    "payee_name": "InferAPI",
+    "to_address": "0xdc5d6044067332c109cdd61d05ce52f50c77cad4",
+    "amount": 0.09,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "api_response",
+    "context_text": "{\"service\":\"InferAPI\",\"units\":430,\"price_usdc\":\"0.09\",\"pay_to\":\"0xdc5d6044067332c109cdd61d05ce52f50c77cad4\"}",
+    "scenario_type": "normal_micro",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-301",
+    "principal": "org-finance",
+    "agent_id": "agent-api-03",
+    "payee_name": "InferAPI",
+    "destinations": "0xdc5d6044067332c109cdd61d05ce52f50c77cad4",
+    "max_amount_per_tx": "1",
+    "max_total": "40",
+    "max_tx_count": null,
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "Pay-per-call inference API",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-301 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-301\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-301).",
+      "evidence": "{\"to\": \"0xdc5d6044067332c109cdd61d05ce52f50c77cad4\", \"trust_source\": \"signed_mandate:MND-301\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 25.97 of 40, 189 payments).",
+      "evidence": "{\"spent\": \"25.97\", \"count\": 189}"
+    }
+  ],
+  "audit_record": {
+    "seq": 258,
+    "ts_utc": "2026-10-20T20:22:25.220642+00:00",
+    "decision": "APPROVE",
+    "record_hash": "62cd13ac85cb32f92f25de71583c07b3e4e3670563c2956771c8c99ae6d3211e",
+    "prev_hash": "7defc67dd3ffa5f3703e3c64809ffea195b2c40518fe34998acca35d406eff49"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0xdc7fd96a1b067619708a7a99e3efbd9644822591161abdffed7070efcf29d868",
+      "submitted_at": "2026-10-31T23:59:47+00:00",
+      "attempt": 1
+    }
+  ],
+  "reconciliation": {
+    "status": "PENDING",
+    "severity": "low",
+    "match_method": "tx_hash",
+    "explanation": "Seen in tx 0xdc7fd96a1b\u2026 (block 51339195) with 6/12 confirmations; linked by tx hash.",
+    "action": "Wait for finality before marking the invoice paid.",
+    "handling": "OPEN",
+    "tx_hashes": "0xdc7fd96a1b067619708a7a99e3efbd9644822591161abdffed7070efcf29d868",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00258",
+        "approved_at": "2026-10-31T16:14:00Z",
+        "agent_id": "agent-api-03",
+        "mandate_id": "MND-301",
+        "from_wallet": "0x14ec54a966fb83430b43ec844ace015863326488",
+        "to_address": "0xdc5d6044067332c109cdd61d05ce52f50c77cad4",
+        "amount": "0.09",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "62cd13ac85cb32f92f25de71583c07b3e4e3670563c2956771c8c99ae6d3211e"
+      },
+      "submitted_tx_hashes": [
+        "0xdc7fd96a1b067619708a7a99e3efbd9644822591161abdffed7070efcf29d868"
+      ],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0xdc7fd96a1b067619708a7a99e3efbd9644822591161abdffed7070efcf29d868",
+          "log_index": 0,
+          "block_number": 51339195,
+          "block_time": "2026-10-31T23:59:50Z",
+          "token": "USDC",
+          "from_address": "0x14ec54a966fb83430b43ec844ace015863326488",
+          "to_address": "0xdc5d6044067332c109cdd61d05ce52f50c77cad4",
+          "amount": "0.09",
+          "status": "success"
+        }
+      ],
+      "block_time": "2026-10-31T23:59:50+00:00"
+    }
+  }
+}

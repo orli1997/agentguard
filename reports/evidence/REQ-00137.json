@@ -1,0 +1,113 @@
+{
+  "request": {
+    "request_id": "REQ-00137",
+    "ts": "2026-10-19 10:00:00",
+    "agent_id": "agent-procure-02",
+    "mandate_id": "MND-202",
+    "payee_name": "SecureMail",
+    "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+    "amount": 45,
+    "token": "USDC",
+    "chain": "base",
+    "context_source": "invoice",
+    "context_text": "INVOICE INV-9404\nSecureMail\nAmount due: 45.00 USDC on Base\nPay to: 0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+    "scenario_type": "normal",
+    "ground_truth": "APPROVE",
+    "notes": null
+  },
+  "mandate": {
+    "mandate_id": "MND-202",
+    "principal": "org-finance",
+    "agent_id": "agent-procure-02",
+    "payee_name": "SecureMail",
+    "destinations": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+    "max_amount_per_tx": "50",
+    "max_total": "150",
+    "max_tx_count": null,
+    "valid_from": "2026-10-01T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "purpose": "SecureMail email security licences",
+    "key_id": "org-finance-2026"
+  },
+  "decision": {
+    "decision": "APPROVE",
+    "risk_score": 0,
+    "primary_reason": "MANDATE_VERIFIED",
+    "engine_version": "0.2.0-phase2"
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "MANDATE_VERIFIED",
+      "message": "Mandate MND-202 signed by org-finance verified.",
+      "evidence": "{\"mandate_id\": \"MND-202\", \"principal\": \"org-finance\", \"key_id\": \"org-finance-2026\"}"
+    },
+    {
+      "severity": "info",
+      "code": "DESTINATION_VERIFIED",
+      "message": "Destination matches a trusted record (signed_mandate:MND-202).",
+      "evidence": "{\"to\": \"0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69\", \"trust_source\": \"signed_mandate:MND-202\"}"
+    },
+    {
+      "severity": "info",
+      "code": "BUDGET_OK",
+      "message": "Within mandate budget (spent 45 of 150, 1 payments).",
+      "evidence": "{\"spent\": \"45\", \"count\": 1}"
+    }
+  ],
+  "audit_record": {
+    "seq": 137,
+    "ts_utc": "2026-10-20T20:22:22.618207+00:00",
+    "decision": "APPROVE",
+    "record_hash": "2af885c73bda7794caf58d2fbf5b40c92a21d18f432de7e859341e68e8ae2fde",
+    "prev_hash": "cf8b8f5ffab0c0b27475bef19eab9808ce34d3d77088379a31d35ecb8bfb60ce"
+  },
+  "audit_chain_intact": true,
+  "submitted": [
+    {
+      "tx_hash": "0x3b66ce41b3333c0a813beba67592cf617a4f68fcc13b7a19a49e8b10058aee19",
+      "submitted_at": "2026-10-19T10:00:36+00:00",
+      "attempt": 1
+    }
+  ],
+  "reconciliation": {
+    "status": "FAILED",
+    "severity": "medium",
+    "match_method": "tx_hash",
+    "explanation": "Tx 0x3b66ce41b3\u2026 was mined in block 50795619 but reverted; no funds moved.",
+    "action": "Safe to retry with the same request_id.",
+    "handling": "OPEN",
+    "tx_hashes": "0x3b66ce41b3333c0a813beba67592cf617a4f68fcc13b7a19a49e8b10058aee19",
+    "evidence": {
+      "approval": {
+        "request_id": "REQ-00137",
+        "approved_at": "2026-10-19T10:00:00Z",
+        "agent_id": "agent-procure-02",
+        "mandate_id": "MND-202",
+        "from_wallet": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+        "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+        "amount": "45.00",
+        "token": "USDC",
+        "chain": "base",
+        "decision_hash": "2af885c73bda7794caf58d2fbf5b40c92a21d18f432de7e859341e68e8ae2fde"
+      },
+      "submitted_tx_hashes": [
+        "0x3b66ce41b3333c0a813beba67592cf617a4f68fcc13b7a19a49e8b10058aee19"
+      ],
+      "observed": [
+        {
+          "chain": "base",
+          "tx_hash": "0x3b66ce41b3333c0a813beba67592cf617a4f68fcc13b7a19a49e8b10058aee19",
+          "log_index": 0,
+          "block_number": 50795619,
+          "block_time": "2026-10-19T10:00:39Z",
+          "token": "USDC",
+          "from_address": "0x4b8b36bbffbdfeb6ff6f13afae489cd2011f8665",
+          "to_address": "0x8eebd1a14a20383cdd4aa7563b114517a5dfaf69",
+          "amount": "45.00",
+          "status": "reverted"
+        }
+      ]
+    }
+  }
+}
