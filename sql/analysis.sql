@@ -171,7 +171,7 @@ ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' T
 
 -- name: recon_exceptions
 -- The operations queue: everything that is not cleanly confirmed, worst first.
-SELECT r.severity, r.status, r.request_id, p.agent_id, p.payee_name, p.amount AS approved_amount,
+SELECT r.item_id, r.severity, r.status, r.request_id, p.agent_id, p.payee_name, p.amount AS approved_amount,
        r.match_method, r.explanation, r.action, r.handling
 FROM recon_items r
 LEFT JOIN payment_requests p USING (request_id)

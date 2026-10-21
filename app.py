@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -13,9 +14,10 @@ from agentguard.metrics import run as run_metrics
 from agentguard.models import EvaluationRequest, EvaluationResult
 from agentguard.scenarios import CASES, by_id
 from agentguard.scenarios_phase2 import CASES2, NOW, by_id2
+from recon_tab import render_reconcile
 
 st.set_page_config(page_title="AgentGuard — Pre-Signing Risk Engine", layout="wide")
-audit = AuditLog("agentguard_audit.db")
+audit = AuditLog(Path(__file__).resolve().parent / "agentguard_audit.db")
 
 COLORS = {"APPROVE": "#1f7a3a", "REVIEW": "#b26b00", "BLOCK": "#b3261e"}
 SEV_ICON = {"block": "⛔", "review": "⚠️", "info": "ℹ️"}
@@ -45,7 +47,7 @@ def show_result(req: EvaluationRequest, res: EvaluationResult, expected: str) ->
     st.info("APPROVE means the request passed the configured checks, not that the transaction is safe.")
 
 
-tab_eval, tab_bench, tab_audit = st.tabs(["Evaluate", "Benchmark", "Audit log"])
+tab_eval, tab_recon, tab_bench, tab_audit = st.tabs(["Evaluate", "Reconcile", "Benchmark", "Audit log"])
 
 # ------------------------------------------------------------------ evaluate
 with tab_eval:
@@ -179,3 +181,7 @@ with tab_audit:
         st.dataframe(df, width="stretch", hide_index=True)
     else:
         st.write("No decisions recorded yet.")
+
+# ------------------------------------------------------------------ reconcile (Phase 3)
+with tab_recon:
+    render_reconcile()
