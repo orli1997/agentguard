@@ -342,7 +342,10 @@ def check_mandate_budget(ctx: Ctx) -> list[Finding]:
 
 
 def check_splitting(ctx: Ctx) -> list[Finding]:
-    """Several near-limit payments to one destination that together exceed the single-payment limit."""
+    """Several near-limit payments to one payee that together exceed the single-payment limit.
+
+    "One payee" = every trusted address of that payee, so alternating between a vendor's
+    two wallets does not hide the pattern. An unknown address is its own group."""
     if ctx.history is None:
         return []
     req, pol = ctx.req, ctx.req.policy
@@ -351,7 +354,9 @@ def check_splitting(ctx: Ctx) -> list[Finding]:
     near = (pol.split_near_limit_ratio * limit).quantize(Decimal("0.000001"))
     since = (now - timedelta(hours=pol.split_window_hours)).timestamp()
     dest = addr.normalize(tx.to)
-    past = [p for p in ctx.history.agent_since(req.action.agent_id, since) if p.dest == dest]
+    trusted = set(trusted_destinations(ctx))
+    group = trusted if dest in trusted else {dest}
+    past = [p for p in ctx.history.agent_since(req.action.agent_id, since) if p.dest in group]
     cluster = [p.amount for p in past if p.amount >= near]
     if tx.amount >= near:
         cluster.append(tx.amount)
@@ -360,7 +365,7 @@ def check_splitting(ctx: Ctx) -> list[Finding]:
         return []
     ev = dict(payments=len(cluster), total=str(total), single_limit=str(limit),
               near_limit_threshold=str(near), window_hours=pol.split_window_hours,
-              amounts=[str(a) for a in cluster], destination=tx.to)
+              amounts=[str(a) for a in cluster], destination=tx.to, payee_addresses=sorted(group))
     m = ctx.auth.mandate
     if m is not None and m.max_total is not None:
         spent, _ = ctx.history.mandate_usage(m.mandate_id)

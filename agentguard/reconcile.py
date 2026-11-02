@@ -72,6 +72,9 @@ class ReconConfig(BaseModel):
     grace_minutes: float = 30          # how long an approval may stay unseen before it is MISSING
     match_window_hours: float = 24     # heuristic matching: transfer must land this soon after approval
     duplicate_window_minutes: float = 60
+    # Engine clock and block timestamps come from different machines. Allow a transfer to look
+    # slightly earlier than its approval before calling it unrelated.
+    clock_skew_seconds: float = 120
 
 
 class Status(str, Enum):
@@ -164,20 +167,37 @@ def reconcile(approved: list[PaymentApproved], observed: list[PaymentObserved],
     for a in sorted(approved, key=lambda x: (x.approved_at, x.request_id)):
         (linked if subs_by_req.get(a.request_id) else unlinked).append(a)
 
+    claimed_by: dict[tuple, str] = {}
     for a in linked:
         subs = sorted(subs_by_req[a.request_id], key=lambda s: s.attempt)
-        hits = [o for s in subs for o in by_hash.get(s.tx_hash.lower(), [])]
+        found = [o for s in subs for o in by_hash.get(s.tx_hash.lower(), [])]
+        # A transfer pays for one approval only. If the executor reported the same hash twice,
+        # the earlier approval keeps it and this one has no transfer of its own.
+        taken = [o for o in found if o.key in claimed]
+        hits = [o for o in found if o.key not in claimed]
         for o in hits:
             claimed.add(o.key)
+            claimed_by[o.key] = a.request_id
+        if taken and not hits:
+            items.append(ReconItem.make(
+                Status.MISSING, subject="approval", request_id=a.request_id, tx_hashes=[o.tx_hash for o in taken],
+                match_method="none",
+                explanation=(f"The executor reported tx {taken[0].tx_hash[:12]}… for this request, but that transfer "
+                             f"already pays for {claimed_by[taken[0].key]}. This approval has no transfer of its own."),
+                action="Ask the executor which request the tx belongs to; one of the two approvals was not paid.",
+                evidence={"approval": a.model_dump(mode="json"), "submitted_tx_hashes": [s.tx_hash for s in subs],
+                          "already_claimed_by": claimed_by[taken[0].key]}))
+            continue
         items.append(_judge(a, hits, "tx_hash", [s.tx_hash for s in subs], as_of, heads, cfg))
 
     # Pass 2: unlinked approvals, matched by route + destination + exact amount inside the window.
     pool = sorted((o for o in outflows if o.key not in claimed), key=lambda o: (o.block_time, o.tx_hash))
     for a in unlinked:
+        start = a.approved_at - timedelta(seconds=cfg.clock_skew_seconds)
         end = a.approved_at + timedelta(hours=cfg.match_window_hours)
         hit = next((o for o in pool if o.key not in claimed and _same_route(a, o)
                     and addr.same_address(o.to_address, a.to_address) and o.amount == a.amount
-                    and a.approved_at <= o.block_time <= end), None)
+                    and start <= o.block_time <= end), None)
         if hit:
             claimed.add(hit.key)
         items.append(_judge(a, [hit] if hit else [], "heuristic" if hit else "none", [], as_of, heads, cfg))

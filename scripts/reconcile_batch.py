@@ -73,7 +73,7 @@ def main() -> None:
         WHERE d.decision = 'APPROVE'""").fetchall()
     approved = [PaymentApproved(request_id=r["request_id"], approved_at=utc(r["ts"]), agent_id=r["agent_id"],
                                 mandate_id=r["mandate_id"], from_wallet=r["wallet_address"], to_address=r["to_address"],
-                                amount=Decimal(str(r["amount"])).quantize(Decimal("0.01")), token=r["token"],
+                                amount=Decimal(str(r["amount"])), token=r["token"],   # exact: USDC has 6 decimals
                                 chain=r["chain"], decision_hash=r["decision_hash"]) for r in rows]
     submitted = [PaymentSubmitted(request_id=s["request_id"], tx_hash=s["tx_hash"], submitted_at=utc(s["submitted_at"]),
                                   attempt=int(s["attempt"])) for s in sheet("submissions")]

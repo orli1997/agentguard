@@ -129,6 +129,20 @@ Matching uses the reported tx hash when there is one. Otherwise it falls back to
 
 **Current result (synthetic):** 218 approvals and 224 transfers. All 221 labelled outcomes match (204 confirmed, of which 32 were matched without a tx hash, plus 17 exceptions). The simulator and reconciler were written together, so this shows rule coverage, not field performance. The RPC observer was checked once against live Base mainnet and parsed 83 real USDC transfers from one block. Free public nodes rate-limit `eth_getLogs` (429) and some refuse receipts (403), so real use needs a keyed RPC provider.
 
+## Verification (2026-11-02)
+
+- **Clean clone:** fresh `git clone` → full pipeline → same results (252/258, 221/221, 44/44). Regenerated Excel files have identical data, so generation is deterministic.
+- **Red-team** (`tests/test_redteam.py`): 15 probes written against cases the rules weren't designed for. **4 failed on first run and were fixed:**
+
+| Finding | Effect before the fix | Fix |
+|---|---|---|
+| Same tx hash reported for two requests | One transfer confirmed **two** approvals (double counting) | A transfer pays one approval; the second gets `MISSING` and is told which request owns the tx |
+| Block timestamp a few seconds before the engine's approval time | Legit payment → `MISSING` + `UNAPPROVED_OUTFLOW` | 120 s clock-skew tolerance (`ReconConfig.clock_skew_seconds`) |
+| Batch loader rounded amounts to cents | 6-decimal USDC amounts would mismatch | Exact `Decimal` end to end |
+| Splitting grouped by address, not payee | Alternating a vendor's two wallets delayed the flag (with N wallets: no flag) | Split groups = all trusted addresses of the payee |
+
+Behaviour that held: `0X`-prefixed and whitespace-padded addresses are blocked, a 0.000001 overpayment is blocked, a mandate can't be replayed on another chain, a key registered to another principal is rejected, naive datetimes are treated as UTC, and address and hash casing doesn't matter.
+
 ## Results on the labeled cases (44 cases: 24 Phase 1 + 20 Phase 2)
 
 `scripts/evaluate.py` reports 44/44 correct decisions, a 0% false-positive rate, and decisions in well under 1 ms. The suite has 70 tests, including the concurrency test.
