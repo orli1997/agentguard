@@ -64,7 +64,7 @@ class PaymentObserved(BaseModel):
 
     @property
     def key(self) -> tuple:
-        return (self.chain, self.tx_hash.lower(), self.log_index)
+        return (self.chain.lower(), self.tx_hash.lower(), self.log_index)
 
 
 class ReconConfig(BaseModel):
@@ -135,7 +135,8 @@ def _decimals_hint(approved: Decimal, sent: Decimal) -> str:
 
 
 def _confirmations(o: PaymentObserved, heads: dict[str, int]) -> int:
-    return max(0, heads.get(o.chain, o.block_number) - o.block_number + 1)
+    normalized_heads = {chain.lower(): height for chain, height in heads.items()}
+    return max(0, normalized_heads.get(o.chain.lower(), o.block_number) - o.block_number + 1)
 
 
 def _same_route(a: PaymentApproved, o: PaymentObserved) -> bool:
@@ -151,7 +152,20 @@ def reconcile(approved: list[PaymentApproved], observed: list[PaymentObserved],
               agent_wallets: set[str], cfg: ReconConfig = ReconConfig()) -> list[ReconItem]:
     """heads: latest block number per chain at as_of. agent_wallets: wallets whose outflows must be explained."""
     wallets = {addr.normalize(w) for w in agent_wallets}
-    outflows = [o for o in observed if addr.normalize(o.from_address) in wallets]   # inbound top-ups are ignored
+    # Event identity, rather than ingestion count, determines how many payments happened.
+    unique = {}
+    for o in observed:
+        previous = unique.get(o.key)
+        if previous is not None:
+            left, right = previous.model_dump(), o.model_dump()
+            for data in (left, right):
+                for field in ('chain', 'tx_hash', 'from_address', 'to_address', 'token'):
+                    data[field] = data[field].lower()
+            if left != right:
+                raise ValueError(f'Conflicting observations for event {o.key}')
+        else:
+            unique[o.key] = o
+    outflows = [o for o in unique.values() if addr.normalize(o.from_address) in wallets]
     by_hash: dict[str, list[PaymentObserved]] = defaultdict(list)
     for o in outflows:
         by_hash[o.tx_hash.lower()].append(o)
@@ -170,7 +184,8 @@ def reconcile(approved: list[PaymentApproved], observed: list[PaymentObserved],
     claimed_by: dict[tuple, str] = {}
     for a in linked:
         subs = sorted(subs_by_req[a.request_id], key=lambda s: s.attempt)
-        found = [o for s in subs for o in by_hash.get(s.tx_hash.lower(), [])]
+        found = list({o.key: o for s in subs for o in by_hash.get(s.tx_hash.lower(), [])
+                      if _same_route(a, o)}.values())
         # A transfer pays for one approval only. If the executor reported the same hash twice,
         # the earlier approval keeps it and this one has no transfer of its own.
         taken = [o for o in found if o.key in claimed]
@@ -210,7 +225,8 @@ def reconcile(approved: list[PaymentApproved], observed: list[PaymentObserved],
         if o.key in claimed or o.status != "success":
             continue
         twin = next(((it, a) for it, a in approvals_by_route.get((addr.normalize(o.to_address), o.amount), [])
-                     if it.status in (Status.CONFIRMED, Status.PENDING, Status.DUPLICATE) and it.evidence.get("block_time")
+                     if _same_route(a, o)
+                     and it.status in (Status.CONFIRMED, Status.PENDING, Status.DUPLICATE) and it.evidence.get("block_time")
                      and abs((o.block_time - datetime.fromisoformat(it.evidence["block_time"])).total_seconds())
                      <= cfg.duplicate_window_minutes * 60), None)
         if twin:

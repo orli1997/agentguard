@@ -11,6 +11,8 @@ AgentGuard takes a payment that an AI agent wants signed and decides **APPROVE /
 
 ## Run
 
+On Windows, create the venv under a short path: Streamlit's package files exceed the 260-character path limit under deep folders, and the install then fails silently (`No module named 'streamlit.proto'`).
+
 ```bash
 python -m venv .venv
 .venv/Scripts/pip install -r requirements.txt     # macOS/Linux: .venv/bin/pip
@@ -131,7 +133,8 @@ Matching uses the reported tx hash when there is one. Otherwise it falls back to
 
 ## Verification (2026-11-02)
 
-- **Clean clone:** fresh `git clone` → full pipeline → same results (252/258, 221/221, 44/44). Regenerated Excel files have identical data, so generation is deterministic.
+- **Clean clone:** fresh `git clone` → full pipeline → same results (252/258, 221/221, 44/44). The regenerated *input* workbooks (`agentguard_test_data.xlsx`, `onchain_activity.xlsx`) have identical data. The *results* report does not: timing cells change on every run. *(Corrected after independent review. The first version of this note said all workbooks were identical, and it reused an existing environment, which hid a missing `openpyxl` dependency.)*
+- **Independent review** (`docs/independent-verification.md`): found and fixed a hash-linked transfer on the wrong chain or token being `CONFIRMED`, false `DUPLICATE`s from repeated submissions or observations, cross-token duplicate folding, and the missing `openpyxl` requirement (10 tests in `tests/test_independent_recon.py`). Re-checked in a brand-new venv installed only from `requirements.txt`: 110 tests pass and the pipeline reproduces 252/258, 221/221, 44/44.
 - **Red-team** (`tests/test_redteam.py`): 15 probes written against cases the rules weren't designed for. **4 failed on first run and were fixed:**
 
 | Finding | Effect before the fix | Fix |
@@ -145,7 +148,7 @@ Behaviour that held: `0X`-prefixed and whitespace-padded addresses are blocked, 
 
 ## Results on the labeled cases (44 cases: 24 Phase 1 + 20 Phase 2)
 
-`scripts/evaluate.py` reports 44/44 correct decisions, a 0% false-positive rate, and decisions in well under 1 ms. The suite has 70 tests, including the concurrency test.
+`scripts/evaluate.py` reports 44/44 correct decisions and a 0% false-positive rate on these synthetic cases. The suite has 110 tests, including the concurrency test and independent reconciliation regressions. Latency depends on the environment.
 
 **These numbers are not evidence of real-world performance.** I wrote the cases at the same time as the rules, so the dev/test split isn't an independent holdout. The cases measure rule coverage and guard against regressions. They do not measure detection.
 
