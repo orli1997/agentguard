@@ -7,3 +7,4 @@ streamlit
 pandas
 openpyxl>=3.1.5
 pytest
+eth-account
