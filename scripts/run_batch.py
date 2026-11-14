@@ -21,7 +21,8 @@ sys.path.insert(0, str(ROOT))
 from agentguard.audit import AuditLog  # noqa: E402
 from agentguard.guard import Guard  # noqa: E402
 from agentguard.ledger import Ledger  # noqa: E402
-from agentguard.mandate import MandateBody, SignedMandate  # noqa: E402
+from agentguard.mandate import SignedMandate  # noqa: E402
+from agentguard.store import load_mandates, load_policies  # noqa: E402
 from agentguard.models import (  # noqa: E402
     AgentAction, AuthorizationPolicy, ContextItem, EvaluationRequest, PrincipalKey, TransactionRequest,
     VendorRecord,
@@ -61,38 +62,11 @@ def rows(con, sql, *args):
 
 
 def build_policies(con) -> dict[str, AuthorizationPolicy]:
-    keys = [PrincipalKey(**k) for k in rows(con, "SELECT * FROM principal_keys")]
-    registry: dict[tuple, list[str]] = {}
-    for v in rows(con, "SELECT * FROM vendors"):
-        registry.setdefault((v["vendor_name"], v["chain"]), []).append(v["address"])
-    vendors = [VendorRecord(name=n, chain=c, addresses=a) for (n, c), a in registry.items()]
-    deny = [r["address"] for r in rows(con, "SELECT address FROM denylist")]
-    out = {}
-    for a in rows(con, "SELECT * FROM agents"):
-        out[a["agent_id"]] = AuthorizationPolicy(
-            agent_id=a["agent_id"], max_amount_per_tx=Decimal(str(a["max_amount_per_tx"])),
-            allowed_tokens=[t.strip() for t in a["allowed_tokens"].split(",")],
-            allowed_chains=[c.strip() for c in a["allowed_chains"].split(",")],
-            vendor_registry=vendors, denylist=deny, principal_keys=keys,
-            require_signed_mandate=bool(a["require_signed_mandate"]),
-            velocity_max_tx=int(a["velocity_max_tx"]), velocity_window_minutes=float(a["velocity_window_minutes"]),
-            split_window_hours=float(a["split_window_hours"]),
-            split_near_limit_ratio=Decimal(str(a["split_near_limit_ratio"])))
-    return out
+    return load_policies(con)
 
 
 def build_mandates(con) -> dict[str, SignedMandate]:
-    out = {}
-    for m in rows(con, "SELECT * FROM mandates"):
-        body = MandateBody(
-            mandate_id=m["mandate_id"], principal=m["principal"], agent_id=m["agent_id"], purpose=m["purpose"] or "",
-            payee_name=m["payee_name"], destinations=[d.strip() for d in m["destinations"].split(";") if d.strip()],
-            token=m["token"], chain=m["chain"], max_amount_per_tx=Decimal(m["max_amount_per_tx"]),
-            max_total=Decimal(m["max_total"]) if m["max_total"] else None,
-            max_tx_count=int(m["max_tx_count"]) if m["max_tx_count"] else None,
-            valid_from=m["valid_from"], expires_at=m["expires_at"])
-        out[m["mandate_id"]] = SignedMandate(body=body, key_id=m["key_id"], signature=m["signature"])
-    return out
+    return load_mandates(con)
 
 
 def main() -> None:

@@ -97,6 +97,28 @@ Excel → SQLite → engine → SQL analysis → Excel report.
 - **4 × `purpose_mismatch`.** Right vendor, wrong purpose ("gift cards" bought through DesignHub). The engine approves them because Scenario B (semantic intent) isn't built.
 - **2 × `vendor_rotated_wallet`.** A genuine vendor wallet change. The engine blocks it, where a human review would be more appropriate.
 
+## The enforcing service (v2)
+
+Until now the engine only *advised*: an agent could skip it, or send its own policy and keys in the request. `agentguard/service.py` makes the check mandatory by architecture:
+
+| The agent controls | The service controls |
+|---|---|
+| the payment it asks for, and what it read | **who the agent is.** The `X-Agent-Key` header decides; only a SHA-256 hash of the key is stored |
+| | **its policy and the trusted principal keys.** Server-side `Store`, loaded from the Excel config; a request carrying `policy`, `agent_id` or any unknown field is rejected with 422 |
+| | **the signing key.** Only `Signer` can move money, and it's called only on APPROVE |
+| | **how often one request is paid.** `(agent, request_id)` is recorded; a retry gets the stored answer (`replayed: true`) and parallel retries get 409 |
+
+The service also records the tx hash it sent, so Reconcile always links by hash. That closes the "no reported hash" limit for payments that go through the service. `GET /v2/reconcile` compares the ledger with the chain.
+
+```bash
+.venv/Scripts/python scripts/demo_service.py                       # the 7-step story, on a local simulated chain
+.venv/Scripts/uvicorn agentguard.service:default_app --factory      # the HTTP service
+```
+
+`tests/test_service.py` has 12 tests. A mutation check, where each protection was deliberately broken (idempotency, signing only on APPROVE, server-side keys), confirmed the tests fail when the protection is gone.
+
+**Still simulated:** the chain is `SimChainSigner`, a local SQLite stand-in. Phase B replaces it with real transfers on Base Sepolia (testnet, no real funds). **Not built:** key management for the service's signing key (HSM/MPC), rotating or revoking agent keys, and TLS or rate limiting for the HTTP service. The v1 endpoint (`agentguard/api.py`) still accepts a caller-supplied policy. It's a research endpoint and must not be exposed.
+
 ## Phase 3: Reconcile (approved vs. executed)
 
 AgentGuard decides *before* signing. Reconcile checks *after* execution: did what happened on-chain match what was approved? The chain alone doesn't know what was approved, so the data contract has three events:
@@ -177,6 +199,9 @@ agentguard/
   mandate.py    Ed25519 signed mandates
   ledger.py     engine-owned payment history, atomic check-and-reserve
   guard.py      engine + ledger + audit as one pre-signing call
+  store.py      server-owned config (policies, keys) + agent API keys + idempotency
+  signer.py     the only component that moves money (SimChainSigner now, testnet next)
+  service.py    v2 HTTP service: authenticate -> decide -> sign only on APPROVE
   reconcile.py  Phase 3: approved vs. executed, statuses + explanations
   observe_rpc.py  read-only ERC-20 transfer reader for EVM JSON-RPC
   address.py    EVM format, normalisation, lookalike detection
