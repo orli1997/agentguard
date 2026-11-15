@@ -7,7 +7,7 @@ AgentGuard takes a payment that an AI agent wants signed and decides **APPROVE /
 - **Phase 1: Payment Address Injection (Scenario A).** A user authorizes "pay Acme 50 USDC". The agent then reads an invoice that has a hidden instruction swapping the destination address.
 - **Phase 2: Signed Mandates and behavior over time (Scenario C).** The user signs a structured mandate with Ed25519, covering destinations, per-payment cap, total budget, payment count, validity window and agent. The engine verifies the signature and enforces the mandate across a *sequence* of payments using its own ledger. That ledger catches cumulative overspend, split payments, and bursts.
 
-**Status:** research prototype. Everything is simulated: no wallet, no keys, no real funds, no testnet.
+**Status:** research prototype. No real funds. The engine benchmarks run on synthetic data; the enforcing service has also run end-to-end on the Base Sepolia testnet (see "Enforcing service").
 
 ## Run
 
@@ -117,7 +117,17 @@ The service also records the tx hash it sent, so Reconcile always links by hash.
 
 `tests/test_service.py` has 12 tests. A mutation check, where each protection was deliberately broken (idempotency, signing only on APPROVE, server-side keys), confirmed the tests fail when the protection is gone.
 
-**Still simulated:** the chain is `SimChainSigner`, a local SQLite stand-in. Phase B replaces it with real transfers on Base Sepolia (testnet, no real funds). **Not built:** key management for the service's signing key (HSM/MPC), rotating or revoking agent keys, and TLS or rate limiting for the HTTP service. The v1 endpoint (`agentguard/api.py`) still accepts a caller-supplied policy. It's a research endpoint and must not be exposed.
+**On a real testnet (Phase B, Base Sepolia, no real funds).** `EvmSigner` signs and broadcasts real USDC transfers; `TestnetObserver` reads them back from the chain for Reconcile. Run `scripts/testnet_setup.py` (creates git-ignored wallets in `secrets/`), fund the service wallet with test ETH and test USDC, then `scripts/demo_testnet.py`. Run on 2026-11-15:
+
+| step | result |
+|---|---|
+| 1 USDC to Acme (legit invoice) | APPROVE, [tx 0x37a1dc2b…](https://sepolia.basescan.org/tx/0x37a1dc2b965c10e9533edaf53160654074efb0ca00316c0b019b7dce07a0c2a5) |
+| hidden instruction to pay 0x…dEaD | BLOCK (`DESTINATION_NOT_AUTHORIZED`), nothing signed |
+| retry of the same invoice | `replayed: true`, no second transfer |
+| 3 USDC, cap is 2 | BLOCK (`AMOUNT_ABOVE_MANDATE`), nothing signed |
+| Reconcile from chain logs | 1 × CONFIRMED, linked by tx hash; wallet 20 → 19 USDC, Acme 0 → 1 USDC |
+
+This shows the enforcement path against a real chain. It is not a production deployment: the testnet key is a plain file, and there is no HSM/MPC. **Not built:** key management for the service's signing key (HSM/MPC), rotating or revoking agent keys, and TLS or rate limiting for the HTTP service. The v1 endpoint (`agentguard/api.py`) still accepts a caller-supplied policy. It's a research endpoint and must not be exposed.
 
 ## Phase 3: Reconcile (approved vs. executed)
 
@@ -200,7 +210,7 @@ agentguard/
   ledger.py     engine-owned payment history, atomic check-and-reserve
   guard.py      engine + ledger + audit as one pre-signing call
   store.py      server-owned config (policies, keys) + agent API keys + idempotency
-  signer.py     the only component that moves money (SimChainSigner now, testnet next)
+  signer.py     the only component that moves money (SimChainSigner locally; evm.py EvmSigner on Base Sepolia)
   service.py    v2 HTTP service: authenticate -> decide -> sign only on APPROVE
   reconcile.py  Phase 3: approved vs. executed, statuses + explanations
   observe_rpc.py  read-only ERC-20 transfer reader for EVM JSON-RPC
