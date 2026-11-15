@@ -21,6 +21,7 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from .audit import AuditLog
+from .delegation import CodeReader, delegation_findings
 from .engine import ENGINE_VERSION
 from .guard import Guard
 from .ledger import Ledger
@@ -55,7 +56,10 @@ class PaymentOut(BaseModel):
 
 def build_app(store: Store, guard: Guard, signer: Signer,
               clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-              observer=None) -> FastAPI:
+              observer=None, code_reader: Optional[CodeReader] = None,
+              trusted_delegates: tuple[str, ...] = ()) -> FastAPI:
+    """code_reader: if given, every request is checked for EIP-7702 delegations on the paying
+    wallet and the destination before the Guard decides (see delegation.py)."""
     app = FastAPI(title="AgentGuard payment service", version=ENGINE_VERSION)
 
     def authenticate(key: Optional[str]) -> str:
@@ -79,7 +83,9 @@ def build_app(store: Store, guard: Guard, signer: Signer,
             action=AgentAction(agent_id=agent, stated_purpose=body.purpose, payee_name=body.payee_name,
                                destination_source_id=body.destination_source_id),
             transaction=body.transaction, context=body.context)
-        res = guard.check(req)
+        chain_findings = (delegation_findings(code_reader, store.wallets[agent], body.transaction.to, trusted_delegates)
+                          if code_reader is not None else None)
+        res = guard.check(req, extra_findings=chain_findings)
         out = PaymentOut(request_id=body.request_id, agent_id=agent, decision=res.decision.value,
                          reason_codes=res.reason_codes)
         if res.decision == Decision.APPROVE:

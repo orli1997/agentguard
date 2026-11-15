@@ -102,6 +102,16 @@ class EvmSigner:
         return f"{EXPLORER[self.network]}/tx/{tx_hash}"
 
 
+class EvmCodeReader:
+    """eth_getCode for the EIP-7702 check (delegation.py)."""
+
+    def __init__(self, rpc: Rpc):
+        self.rpc = rpc
+
+    def code(self, address: str) -> str:
+        return self.rpc.call("eth_getCode", [address, "latest"])
+
+
 class TestnetObserver:
     """Reads USDC Transfer events to/from the service wallets since a starting block."""
 

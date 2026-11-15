@@ -134,7 +134,8 @@ class Store:
         if not raw:
             return None
         h = _hash_key(raw)
-        row = self._state.execute("SELECT key_hash, agent_id FROM agent_keys WHERE key_hash = ?", (h,)).fetchone()
+        with self._lock:   # one shared connection: every use, reads included, goes through the lock
+            row = self._state.execute("SELECT key_hash, agent_id FROM agent_keys WHERE key_hash = ?", (h,)).fetchone()
         return row["agent_id"] if row and hmac.compare_digest(row["key_hash"], h) else None
 
     # ---------------------------------------------------------- idempotency
@@ -162,7 +163,8 @@ class Store:
             c.execute("INSERT INTO submissions VALUES (?, ?, ?, ?)", (request_id, tx_hash, now.isoformat(), attempt))
 
     def submissions(self) -> list[dict]:
-        return [dict(r) for r in self._state.execute("SELECT * FROM submissions ORDER BY submitted_at")]
+        with self._lock:
+            return [dict(r) for r in self._state.execute("SELECT * FROM submissions ORDER BY submitted_at")]
 
     def close(self) -> None:
         self._state.close()

@@ -14,7 +14,7 @@ from typing import Callable, Optional
 from .audit import AuditLog
 from .engine import evaluate
 from .ledger import Ledger
-from .models import Decision, EvaluationRequest, EvaluationResult
+from .models import Decision, EvaluationRequest, EvaluationResult, Finding
 
 
 class Guard:
@@ -22,10 +22,10 @@ class Guard:
                  clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
         self.ledger, self.audit, self.clock = ledger, audit, clock
 
-    def check(self, req: EvaluationRequest) -> EvaluationResult:
+    def check(self, req: EvaluationRequest, extra_findings: Optional[list[Finding]] = None) -> EvaluationResult:
         now = self.clock()
         with self.ledger.locked() as history:
-            res = evaluate(req, history=history, now=now)
+            res = evaluate(req, history=history, now=now, extra_findings=extra_findings)
             if res.decision == Decision.APPROVE:
                 self._record(history, req, now, "approved")
         if self.audit:

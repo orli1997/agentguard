@@ -415,7 +415,8 @@ def risk_score(findings: list[Finding]) -> int:
 
 
 def evaluate(req: EvaluationRequest, history: Optional[HistoryView] = None,
-             now: Optional[datetime] = None) -> EvaluationResult:
+             now: Optional[datetime] = None, extra_findings: Optional[list[Finding]] = None) -> EvaluationResult:
+    """`extra_findings` come from checks the engine cannot run itself (e.g. live chain reads)."""
     t0 = time.perf_counter()
     ctx = Ctx(req=req, now=_aware(now or datetime.now(timezone.utc)), history=history)
     step = "resolve_authority"
@@ -429,6 +430,7 @@ def evaluate(req: EvaluationRequest, history: Optional[HistoryView] = None,
         ctx.findings.append(_f("ENGINE_ERROR", Severity.REVIEW,
                                "Engine error during evaluation; human review required.",
                                error=f"{type(e).__name__}: {e}", check=step))
+    ctx.findings.extend(extra_findings or [])
     order = {Severity.BLOCK: 0, Severity.REVIEW: 1, Severity.INFO: 2}
     findings = sorted(ctx.findings, key=lambda x: order[x.severity])
     return EvaluationResult(

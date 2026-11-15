@@ -22,7 +22,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from agentguard.audit import AuditLog  # noqa: E402
 from agentguard.evm import (  # noqa: E402
-    RPC_URL, EvmSigner, TestnetObserver, eth_balance, load_or_create_wallets, now_utc, token_balance,
+    RPC_URL, EvmCodeReader, EvmSigner, TestnetObserver, eth_balance, load_or_create_wallets, now_utc, token_balance,
 )
 from agentguard.guard import Guard  # noqa: E402
 from agentguard.ledger import Ledger  # noqa: E402
@@ -47,6 +47,9 @@ def step(n, title):
 def main() -> None:
     w = load_or_create_wallets(WALLETS, ["service_agent_wallet", "vendor_acme"])
     svc, vendor = w["service_agent_wallet"]["address"], w["vendor_acme"]["address"]
+    # a second Acme wallet with a real EIP-7702 delegation, made by scripts/testnet_7702_setup.py (optional)
+    hijacked = w.get("acme_compromised", {}).get("address")
+    acme_wallets = [vendor] + ([hijacked] if hijacked else [])
     rpc = Rpc(RPC_URL[NET])
     eth, usdc = eth_balance(rpc, svc), token_balance(rpc, USDC[NET], svc)
     print(f"Service wallet {svc}: {eth:.6f} ETH, {usdc} USDC (Base Sepolia)")
@@ -62,20 +65,21 @@ def main() -> None:
     p = store.policies[AGENT]
     store.policies[AGENT] = p.model_copy(update={
         "allowed_chains": [NET],
-        "vendor_registry": p.vendor_registry + [VendorRecord(name="Acme Cloud Ltd", chain=NET, addresses=[vendor])]})
+        "vendor_registry": p.vendor_registry + [VendorRecord(name="Acme Cloud Ltd", chain=NET, addresses=acme_wallets)]})
     store.wallets[AGENT] = svc
 
     signer = EvmSigner(rpc, NET, {"svc": w["service_agent_wallet"]["key"]})
     start_block = head(rpc)
     observer = TestnetObserver(rpc, NET, [svc], from_block=start_block)
     guard = Guard(Ledger(str(STATE)), audit=AuditLog(STATE), clock=now_utc)
-    client = TestClient(build_app(store, guard, signer, clock=now_utc, observer=observer))
+    client = TestClient(build_app(store, guard, signer, clock=now_utc, observer=observer,
+                                  code_reader=EvmCodeReader(rpc)))
     key = store.issue_agent_key(AGENT, now_utc())
 
     t0 = now_utc()
     body = MandateBody(mandate_id="MND-T1", principal="org-finance", agent_id=AGENT,
                        purpose="Acme Cloud test invoices on Base Sepolia", payee_name="Acme Cloud Ltd",
-                       destinations=[vendor], token="USDC", chain=NET, max_amount_per_tx=Decimal("2"),
+                       destinations=acme_wallets, token="USDC", chain=NET, max_amount_per_tx=Decimal("2"),
                        max_total=Decimal("5"), max_tx_count=4, valid_from=t0 - timedelta(days=1),
                        expires_at=t0 + timedelta(days=30))
     mandate = sign(body, fixture_key("principal:org-finance"), "org-finance-2026").model_dump(mode="json")
@@ -105,6 +109,11 @@ def main() -> None:
     step(4, "3 USDC: above the mandate's 2 USDC cap")
     r = pay("INV-3", vendor, amount="3")
     print(f"   {r['decision']}  {r['reason_codes'][:1]}  tx: {r['tx_hash']}")
+
+    if hijacked:
+        step("4b", "Acme's second wallet carries an EIP-7702 delegation (read live from the chain)")
+        r = pay("INV-4", hijacked)
+        print(f"   {r['decision']}  {r['reason_codes'][:1]}  tx: {r['tx_hash']}")
 
     step(5, "Reconcile against the chain (waiting ~30 s for 12 confirmations)")
     time.sleep(30)
