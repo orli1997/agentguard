@@ -1,5 +1,7 @@
 # AgentGuard: Pre-Signing Risk Engine (Phase 2 prototype)
 
+**English** | [עברית](README.he.md)
+
 > A technically valid transaction is not necessarily an authorized transaction.
 
 AgentGuard takes a payment that an AI agent wants signed and decides **APPROVE / REVIEW / BLOCK** *before* the signature happens. Each decision comes with reason codes, evidence, and a hash-chained audit record.
@@ -182,20 +184,20 @@ Behaviour that held: `0X`-prefixed and whitespace-padded addresses are blocked, 
 
 ## Results on the labeled cases (44 cases: 24 Phase 1 + 20 Phase 2)
 
-`scripts/evaluate.py` reports 44/44 correct decisions and a 0% false-positive rate on these synthetic cases. The suite has 110 tests, including the concurrency test and independent reconciliation regressions. Latency depends on the environment.
+`scripts/evaluate.py` reports 44/44 correct decisions and a 0% false-positive rate on these synthetic cases. The suite now has 128 tests, including the concurrency test and independent reconciliation regressions. Latency depends on the environment.
 
 **These numbers are not evidence of real-world performance.** I wrote the cases at the same time as the rules, so the dev/test split isn't an independent holdout. The cases measure rule coverage and guard against regressions. They do not measure detection.
 
 ## Known limitations (facts, not caveats)
 
-1. **No enforcement.** The engine returns a decision. Nothing stops an agent from calling the signer directly. In production the *signer* (or an MPC/policy co-signer) has to call AgentGuard and refuse to sign without APPROVE.
+1. **Enforcement is one service, not an independent co-signer.** The v2 service holds the signing key and signs only on APPROVE, so an agent using it cannot skip the check. But it is one key in one service: in production the check belongs in an MPC/policy co-signer that must sign before a transaction is valid.
 2. **The trust boundary moved; it didn't vanish.** Phase 2 mandates close the "forged intent" gap, but now the principal's signing key and the `principal_keys` config are the boundary. Key management (where the user signs, rotation, revocation) isn't built. There's no revocation list yet: a leaked mandate is valid until it expires.
 3. **EVM only, and no EIP-55 checksum validation.** That needs keccak-256, which isn't in the Python stdlib.
 4. **Behavioral rules are fixed thresholds** (50% near-limit, 24h, 10/hour). They're placeholders, not calibrated on real payment data, and a patient attacker can stay under them (e.g. 3 payments a day). Semantic purpose mismatch (Scenario B) is Phase 3.
 5. **The injection regex is easy to bypass.** That's acceptable only because it never decides anything.
 6. **Payee matching is exact string matching** after case and whitespace normalisation.
 7. **The audit chain is tamper-evident, not tamper-proof.** Anyone with DB write access can rewrite the whole chain unless the head hash is anchored externally.
-8. **Ledger records approvals, not settlement.** An APPROVE is assumed to be paid. A signed-but-failed transaction still counts against the budget, which is the conservative direction. Reconciling the ledger with on-chain settlement is not built.
+8. **Ledger records approvals, not settlement.** An APPROVE is assumed to be paid, so a signed-but-failed transaction still counts against the budget (the conservative direction). Reconcile (Phase 3) detects the difference after the fact, but does not yet release the budget.
 
 ## Hypotheses still to test (not claims)
 
