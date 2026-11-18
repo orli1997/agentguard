@@ -131,6 +131,25 @@ The service also records the tx hash it sent, so Reconcile always links by hash.
 
 **EIP-7702 delegation check** (`agentguard/delegation.py`). Since Pectra, an ordinary wallet can delegate its code to a contract with one signed authorization, which is how "sweeper" drainers take over wallets. Before the Guard decides, the service reads `eth_getCode` for the paying wallet and the destination. A delegation designator (`0xef0100` + delegate) on the service's own wallet is a BLOCK (`SOURCE_WALLET_DELEGATED`, since the service only ever signs type-2 transfers, never a type-4 authorization). On the destination it is a REVIEW (`DESTINATION_7702_DELEGATED`), because legitimate smart-account wallets delegate too, unless the delegate is on a trusted list. An unreadable chain goes to REVIEW. `scripts/testnet_7702_setup.py` creates a real delegated wallet on Base Sepolia ([type-4 tx](https://sepolia.basescan.org/tx/0x8a6c3e9deadb81f5eed131a459e370995eae1279b96c4c7018cd169eff6981e4), delegate `0x…dEaD`, which has no code), and the demo's step 4b gets REVIEW for a payment to it, read live from the chain. Limits: a point-in-time read, so a delegation set after the check is not seen; which delegates to trust is configuration we don't have data for.
 
+**Address-poisoning intel** (`agentguard/poisoning_intel.py`). `LOOKALIKE_ADDRESS` compares the destination with the payee's *trusted* addresses, so it can't help when there are none: that case is only a REVIEW (`UNVERIFIED_DESTINATION`). An agent that copies an address from the wallet's own history is exactly the victim address poisoning is built for. The service now also checks the destination against the database of my [live address-poisoning detector](https://github.com/orli1997/address-poisoning-base), which records every lookalike address used to plant a fake transfer on Base mainnet USDC (about 84,000 so far). AgentGuard opens that database read-only and imports nothing from the other project.
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `KNOWN_POISONING_ADDRESS` | block | The destination was used to poison wallets. Evidence: the real address it imitates, wallets poisoned, blocks seen, recorded losses. Also fires on a *trusted* address: a poisoning address in a registry or mandate means someone copied it from a poisoned history |
+| `POSSIBLE_POISONING_ADDRESS` | review | Every match is between low-entropy addresses (`0x0000…`), which can match without an attack |
+| `POISONING_INTEL_STALE` | info | The detector hasn't written for over an hour; newer attackers are missing |
+| `POISONING_INTEL_UNAVAILABLE` | info (review if `intel_required`) | The database can't be read. Default info: the intel is an extra layer, and the engine's decision without it is unchanged |
+| `POISONING_INTEL_CLEAR` | info | Not in the intel, with the snapshot checked. Not proof of safety |
+
+The intel is observed on Base, but the same key controls an EVM address on every EVM chain, so it is checked for every chain. `default_app` reads `AGENTGUARD_POISON_INTEL_DB`, or `~/poisoning_data/live.db` if it exists.
+
+```bash
+.venv/Scripts/python scripts/demo_poisoning_intel.py     # against the real live.db
+.venv/Scripts/python scripts/intel_queries.py data/service.db   # analyst queries in sql/poisoning_intel.sql
+```
+
+Demo run on 2026-11-18, agent pays `0xa742debd…b9c3` copied from the wallet's history: without intel REVIEW (`UNVERIFIED_DESTINATION`); with intel BLOCK, "used to poison 1074 wallet(s), imitating `0xa742314b…b9c3`". The real address stays REVIEW: the intel can say an address is bad, never that it is good. The SQL lists every intel block (with `only_intel`: no other rule would have blocked it), the value stopped, and the REVIEW queue with the intel status for triage. Limits: the detector's precision was measured (≥ 99.97%), its recall was not, and it only knows exact 4+4 lookalikes.
+
 This shows the enforcement path against a real chain. It is not a production deployment: the testnet key is a plain file, and there is no HSM/MPC. **Not built:** key management for the service's signing key (HSM/MPC), rotating or revoking agent keys, and TLS or rate limiting for the HTTP service. The v1 endpoint (`agentguard/api.py`) still accepts a caller-supplied policy. It's a research endpoint and must not be exposed.
 
 ## Phase 3: Reconcile (approved vs. executed)
@@ -184,7 +203,7 @@ Behaviour that held: `0X`-prefixed and whitespace-padded addresses are blocked, 
 
 ## Results on the labeled cases (44 cases: 24 Phase 1 + 20 Phase 2)
 
-`scripts/evaluate.py` reports 44/44 correct decisions and a 0% false-positive rate on these synthetic cases. The suite now has 128 tests, including the concurrency test and independent reconciliation regressions. Latency depends on the environment.
+`scripts/evaluate.py` reports 44/44 correct decisions and a 0% false-positive rate on these synthetic cases. The suite now has 138 tests, including the concurrency test and independent reconciliation regressions. Latency depends on the environment.
 
 **These numbers are not evidence of real-world performance.** I wrote the cases at the same time as the rules, so the dev/test split isn't an independent holdout. The cases measure rule coverage and guard against regressions. They do not measure detection.
 
@@ -202,6 +221,7 @@ Behaviour that held: `0X`-prefixed and whitespace-padded addresses are blocked, 
 ## Hypotheses still to test (not claims)
 
 - Wallet providers (Coinbase Agentic Wallets, Crossmint, Openfort, Turnkey-style policy engines) may already enforce destination allowlists. If so, Scenario A on its own is **not** a differentiator. The open question is whether the *intent-bound* version (allowlist derived per task from the user instruction, plus provenance) adds value over static allowlists.
+- Live poisoning intel (above) may be what a static allowlist lacks: it covers payees with no trusted record, and catches a poisoned address inside the trusted records. Whether wallet providers already have equivalent intel is unchecked.
 - Customers would pay for an independent layer. Unvalidated.
 
 ## Layout
@@ -217,6 +237,7 @@ agentguard/
   signer.py     the only component that moves money (SimChainSigner locally; evm.py EvmSigner on Base Sepolia)
   service.py    v2 HTTP service: authenticate -> decide -> sign only on APPROVE
   reconcile.py  Phase 3: approved vs. executed, statuses + explanations
+  poisoning_intel.py  read-only lookup in the live address-poisoning detector's database
   observe_rpc.py  read-only ERC-20 transfer reader for EVM JSON-RPC
   address.py    EVM format, normalisation, lookalike detection
   injection.py  instruction-in-content heuristics (evidence only)

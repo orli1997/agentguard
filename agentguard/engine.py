@@ -36,7 +36,7 @@ from .models import (
 ENGINE_VERSION = "0.2.0-phase2"
 
 _WEIGHTS = {Severity.BLOCK: 60, Severity.REVIEW: 25, Severity.INFO: 5}
-_NEUTRAL = {"DESTINATION_VERIFIED", "MANDATE_VERIFIED", "BUDGET_OK"}  # info codes that are good news
+_NEUTRAL = {"DESTINATION_VERIFIED", "MANDATE_VERIFIED", "BUDGET_OK", "POISONING_INTEL_CLEAR"}  # info codes that are good news
 
 
 @dataclass

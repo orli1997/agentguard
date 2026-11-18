@@ -27,6 +27,7 @@ class SourceType(str, Enum):
     WEB_PAGE = "web_page"
     API_RESPONSE = "api_response"
     AGENT_MEMORY = "agent_memory"
+    WALLET_HISTORY = "wallet_history"   # the wallet's own past transfers: where address poisoning plants its fakes
     VENDOR_REGISTRY = "vendor_registry"
     UNKNOWN = "unknown"
 

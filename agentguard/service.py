@@ -26,6 +26,7 @@ from .engine import ENGINE_VERSION
 from .guard import Guard
 from .ledger import Ledger
 from .mandate import SignedMandate
+from .poisoning_intel import PoisoningIntel, poisoning_findings
 from .models import AgentAction, ContextItem, Decision, EvaluationRequest, TransactionRequest
 from .reconcile import PaymentApproved, PaymentSubmitted, ReconConfig, reconcile
 from .signer import Signer, SimChainSigner
@@ -57,9 +58,11 @@ class PaymentOut(BaseModel):
 def build_app(store: Store, guard: Guard, signer: Signer,
               clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
               observer=None, code_reader: Optional[CodeReader] = None,
-              trusted_delegates: tuple[str, ...] = ()) -> FastAPI:
+              trusted_delegates: tuple[str, ...] = (), intel: Optional[PoisoningIntel] = None,
+              intel_required: bool = False) -> FastAPI:
     """code_reader: if given, every request is checked for EIP-7702 delegations on the paying
-    wallet and the destination before the Guard decides (see delegation.py)."""
+    wallet and the destination before the Guard decides (see delegation.py).
+    intel: if given, the destination is checked against address-poisoning intel (see poisoning_intel.py)."""
     app = FastAPI(title="AgentGuard payment service", version=ENGINE_VERSION)
 
     def authenticate(key: Optional[str]) -> str:
@@ -84,7 +87,9 @@ def build_app(store: Store, guard: Guard, signer: Signer,
                                destination_source_id=body.destination_source_id),
             transaction=body.transaction, context=body.context)
         chain_findings = (delegation_findings(code_reader, store.wallets[agent], body.transaction.to, trusted_delegates)
-                          if code_reader is not None else None)
+                          if code_reader is not None else [])
+        if intel is not None:
+            chain_findings += poisoning_findings(intel, body.transaction.to, required=intel_required)
         res = guard.check(req, extra_findings=chain_findings)
         out = PaymentOut(request_id=body.request_id, agent_id=agent, decision=res.decision.value,
                          reason_codes=res.reason_codes)
@@ -129,5 +134,8 @@ def default_app() -> FastAPI:
     store = Store(os.environ.get("AGENTGUARD_CONFIG_DB", root / "agentguard.db"), state)
     chain = SimChainSigner(state)
     guard = Guard(Ledger(str(state)), audit=AuditLog(state))
-    return build_app(store, guard, chain, observer=chain)
+    # Address-poisoning intel: AGENTGUARD_POISON_INTEL_DB, else the live detector's default location if present.
+    intel_db = Path(os.environ.get("AGENTGUARD_POISON_INTEL_DB", Path.home() / "poisoning_data" / "live.db"))
+    intel = PoisoningIntel(intel_db) if intel_db.is_file() else None
+    return build_app(store, guard, chain, observer=chain, intel=intel)
 
